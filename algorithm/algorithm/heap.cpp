@@ -5,6 +5,21 @@ typedef unsigned int uint32_t;
 typedef long         int32_t;
 typedef  uint32_t uint32;
 typedef  int32_t  int32;
+
+class TestClass
+{
+public:
+	TestClass(int i=0):val(i)
+	{
+	}
+	TestClass(int* pI):val(*pI){}
+	void set(int i){val=i;}
+	bool operator<(const TestClass& i)const
+	{
+		return val<i.val;
+	}
+	int val;
+};
 static bool makedata(int* array,uint32_t count)
 {
 	if(!array)return false;
@@ -15,29 +30,38 @@ static bool makedata(int* array,uint32_t count)
 	}
 	return true;
 }
+
 int main()
 {
 	const unsigned int MAXSIZE=100000;
 	int* arrayList=new int[MAXSIZE];
 	makedata(arrayList,MAXSIZE);
-	MaxHeap<int> maxheap(arrayList,MAXSIZE/2);
+	TestClass* testlist=new TestClass[MAXSIZE];
+	for (int i=0;i!=MAXSIZE;i++)
+	{
+		testlist[i].set(arrayList[i]);
+	}
+	delete[] arrayList;
+	arrayList=NULL;
+	MaxHeap<TestClass> maxheap(testlist,MAXSIZE/2);
 	for (int i=MAXSIZE/2;i!=MAXSIZE;i++)
 	{
-		maxheap.InsertVal(arrayList[i]);
+		maxheap.InsertVal(testlist[i]);
 	}
-	int temp=0;
+	TestClass temp=0;
 	int iu=0;
 	while(maxheap.Pop(temp))
 	{
-		arrayList[iu++]=temp;
+		testlist[iu++]=temp;
 	}
 	FILE* fp=fopen("head_sort.result","w");
 	for(int i=0;i!=MAXSIZE;i++)
 	{
-		fprintf(fp,"%d\t",arrayList[i]);
+		fprintf(fp,"%d\t",testlist[i].val);
 		if(i%10==0)
 			fprintf(fp,"\n");
 	}
 	fclose(fp);
+	delete[] testlist;testlist=NULL;
 	return 0;
 }
