@@ -94,7 +94,7 @@ bool MaxHeap<T>::Replace(unsigned int pos,const T& val,bool append)
 	{
 		m_ValList[pos]=val;
 	}
-	while(pos>0&&m_ValList[pos]>m_ValList[pos/2])
+	while(pos>0&&m_ValList[pos/2]<m_ValList[pos])
 	{
 		std::swap(m_ValList[pos],m_ValList[pos/2]);
 		pos=pos/2;
