@@ -75,6 +75,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\thread\base.h" />
+    <ClInclude Include="..\src\thread\singleton.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\thread\base.cpp" />
+    <ClCompile Include="..\src\thread\test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
