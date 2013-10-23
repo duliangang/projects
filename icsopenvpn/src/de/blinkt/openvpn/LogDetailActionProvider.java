@@ -7,8 +7,8 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.*;
 import android.widget.SpinnerAdapter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+//import org.jetbrains.annotations.NotNull;
+//import org.jetbrains.annotations.Nullable;
 
 /**
  * Created by arne on 22.09.13.

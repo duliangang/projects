@@ -205,7 +205,7 @@ public class AboutFragment extends Fragment implements View.OnClickListener {
         if (ownedSkus.contains(sku))
             return new Pair<String,String>(getString(R.string.thanks_for_donation, price),null);
 
-        if (price.contains("â‚¬")|| price.contains("\u20ac")) {
+        if (price.contains("¢ã")|| price.contains("\u20ac")) {
             text= title;
         } else {
             text = String.format(Locale.getDefault(), "%s (%s)", title, price);

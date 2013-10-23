@@ -9,7 +9,7 @@ import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import org.jetbrains.annotations.NotNull;
+//import org.jetbrains.annotations.NotNull;
 
 import de.blinkt.openvpn.R;
 import de.blinkt.openvpn.VpnProfile;
@@ -56,7 +56,7 @@ public class OpenVpnManagementThread implements Runnable, OpenVPNManagement {
 
 	}
 
-    public boolean openManagementInterface(@NotNull Context c) {
+    public boolean openManagementInterface( Context c) {
         // Could take a while to open connection
         int tries=8;
 
