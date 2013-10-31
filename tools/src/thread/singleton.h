@@ -11,7 +11,7 @@ public:
 		if(m_t==NULL)
 		{
 			MUTEX_TYPE mutex_;
-			AutoLock autolock( MUTEX_TYPE mutex_)
+			AutoLock<MUTEX_TYPE> autolock(&mutex_);
 			if(m_t==NULL)
 			{
 				m_t=new TYPE();
@@ -23,7 +23,7 @@ private:
 	static TYPE* m_t;
 };
 template<class TYPE,class MUTEX_TYPE>
-TYPE* Singleton::m_t=NULL;
+TYPE* Singleton<TYPE,MUTEX_TYPE>::m_t=NULL;
 
 
 
@@ -36,7 +36,7 @@ struct LockResult
 	{
 	}
 	Type* type;
-	CAutoLock lock;
+	AutoLock<MutexType> lock;
 	~LockResult()
 	{
 		type=NULL;
@@ -53,7 +53,7 @@ public:
 		if(m_t==NULL||mMutex==NULL)
 		{
 			static MUTEX_TYPE mutex_;
-			AutoLock autolock(&mutex_);
+			AutoLock autolock(&mutex_);
 				if(m_t==NULL)
 				{
 					m_t=new TYPE();
@@ -71,10 +71,10 @@ private:
 	static MUTEX_TYPE *mMutex;
 };
 template<class TYPE,class MUTEX_TYPE>
-TYPE* LOCKFUN_Singleton::m_t=NULL;
+TYPE* LOCKFUN_Singleton<TYPE,MUTEX_TYPE>::m_t=NULL;
 
 template<class TYPE,class MUTEX_TYPE>
-TYPE* LOCKFUN_Singleton::mMutex=NULL;
+TYPE* LOCKFUN_Singleton<TYPE,MUTEX_TYPE>::mMutex=NULL;
 
 #define GetLockFunInstance() _GetInstance().type
 #endif

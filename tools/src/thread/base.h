@@ -1,6 +1,7 @@
 #ifndef _BASE_H_
 #define _BASE_H_
 #include "../shared/Define.h"
+#include "semaphore.h"
 #include <boost/thread/thread.hpp>
 #include <boost/function/function0.hpp>  
 #include <boost/shared_ptr.hpp>
@@ -51,9 +52,9 @@ public:
 	Null_Mutex(){}
 	~Null_Mutex(){}
 
-	int acquire(){}
-	int acquire(uint32_t wait_time){}
-	int tryacquire (void){}
+	int acquire(){return 0;}
+	int acquire(uint32_t wait_time){return 0;}
+	int tryacquire (void){return 0;}
 	void release(){}
 };
 
@@ -66,6 +67,50 @@ public:
 private:
 	LOCK_TYPE* m_t;
 };
+class Thread_Semaphore
+{
+public:
+
+	Thread_Semaphore(unsigned int value,unsigned int max,const char* name=NULL,SECURITY_ATTRIBUTES* sa=NULL):isdestory(false)
+	{
+		sema_init(&t,name,value,max,sa);
+	}
+	void destory()
+	{
+		if(!isdestory)
+		{
+			int i=sema_destroy(&t);
+			isdestory=true;
+			
+		}
+	}
+	~Thread_Semaphore()
+	{
+		if(!isdestory)
+			sema_destroy(&t);
+	}
+	
+	int wait()
+	{
+		return sema_wait(&t);
+	}
+
+	int trywait()
+	{
+		return sema_trywait(&t);
+	}
+
+	int post()
+	{
+		return sema_post(&t);
+	}
+
+private:
+	sema_t t;
+	bool isdestory;
+};
+
+
 struct threadInfo
 {
 	enum ThreadStatu
@@ -91,12 +136,12 @@ public:
 	Task_Base(int thread_count=1);
 	int open();
 	void task(int thread_index);
-	virtual void svr()=0;
+	virtual void svc()=0;
 	 Task_Statu statu(){return m_info->statu;}
 	int putmsgto(void* msg,int32_t size,Task_Base* target);
 	int putmsg(const BLOCK& block);
 	int32_t getmsg(BLOCK& block);
-	virtual void close()=0;
+	virtual void close(){};
 	void join();
 	~Task_Base();
 protected:

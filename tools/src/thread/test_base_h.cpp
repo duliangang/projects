@@ -3,7 +3,7 @@
 #ifdef _LINUX
 #include <linux/delay.h>
 #endif
-class  task_process:public Task_Base
+class task_process:public Task_Base
 {
 public:
 	task_process(int thread_count):Task_Base(thread_count)
@@ -19,7 +19,7 @@ public:
 		_tprintf(TEXT("not process msg size %d\n"),m_msgBlockList.size());
 		return ;
 	}
-	virtual void svr()
+	virtual void svc()
 	{
 		while(!m_bStop)
 		{
@@ -53,7 +53,7 @@ public:
 	{
 		m_bStop=true;
 	}
-	virtual void svr()
+	virtual void svc()
 	{
 		while(!m_bStop)
 		{
@@ -80,7 +80,7 @@ private:
 };
 
 
-int main()
+int test_Base_H()
 {
 	task_process process(10);
 	task_Create creator(30,&process);

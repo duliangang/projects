@@ -133,7 +133,7 @@ void Task_Base::task(int index)
 	m_mutex.acquire();
 	++m_currentThreadCount;
 	m_mutex.release();
-	svr();
+	svc();
 	m_mutex.acquire();
 	--m_currentThreadCount;
 	if (m_currentThreadCount==0)
