@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{77B9773B-EC69-4439-9B79-DE9227DE66AC}</ProjectGuid>
+    <ProjectGuid>{69D8D2B8-0753-4CCB-B196-2382A3B5006B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>thread</RootNamespace>
+    <RootNamespace>socket</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -74,17 +74,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\shared\Message_Block.h" />
-    <ClInclude Include="..\src\thread\base.h" />
-    <ClInclude Include="..\src\thread\Msg_Queue_Ex.h" />
-    <ClInclude Include="..\src\thread\semaphore.h" />
-    <ClInclude Include="..\src\thread\singleton.h" />
+    <ClInclude Include="..\src\socket\CMySocket.h" />
+    <ClInclude Include="..\src\socket\socket_test.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\config\config.cpp" />
+    <ClCompile Include="..\src\log\Appender.cpp" />
+    <ClCompile Include="..\src\log\AppenderConsole.cpp" />
+    <ClCompile Include="..\src\log\AppenderFile.cpp" />
+    <ClCompile Include="..\src\log\log.cpp" />
+    <ClCompile Include="..\src\log\Logger.cpp" />
+    <ClCompile Include="..\src\log\LogWorker.cpp" />
+    <ClCompile Include="..\src\shared\Util.cpp" />
+    <ClCompile Include="..\src\socket\CMysocket.cpp" />
+    <ClCompile Include="..\src\socket\event_msgqueue.cpp" />
+    <ClCompile Include="..\src\socket\socket_test.cpp" />
     <ClCompile Include="..\src\thread\base.cpp" />
     <ClCompile Include="..\src\thread\samaphore.cpp" />
-    <ClCompile Include="..\src\thread\test_base_h.cpp" />
-    <ClCompile Include="..\src\thread\test_Msg_Queue_Ex.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
