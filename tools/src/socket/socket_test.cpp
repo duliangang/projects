@@ -110,7 +110,6 @@ int Learn_RealmSocket::handle_input()
 	{
 		_session->OnRead();
 		input_buffer.crunch();
-		closefd();
 	/*	input_buffer.base(NULL,0);
 		input_buffer.reset();*/
 		//printf("apace =%d \n",space);
@@ -178,8 +177,8 @@ int Learn_RealmSocket::handle_close()
 	{
 		_session->OnClose();
 	}
-	Reactor_()->clear_wakeup(this);
-	//shutdown();
+	//Reactor_()->clear_wakeup(this);
+	shutdown();
 	return 0;
 }
 DecodeSocket::DecodeSocket(Learn_RealmSocket* sh):_sh(sh)

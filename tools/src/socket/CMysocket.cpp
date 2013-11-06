@@ -43,16 +43,15 @@ int SVC_Handler::create(evutil_socket_t fd,const sockaddr* addr_)
 {
 	m_peer=fd;
 	memcpy(&m_addr,addr_,sizeof(m_addr));
-	Reactor_()->schedule_wakeup(EVENT_HANDLE::READ_MASK,this);
+	Reactor_()->_schedule_wakeup(EVENT_HANDLE::READ_MASK,this);
 	return 0;
 }
 
 int SVC_Handler::shutdown()
 {
+	Reactor_()->cancel_wakeup(this,READ_MASK);
 	 int flag=closefd();
-	 m_peer=NULL;
 	 return flag;
-	//Reactor_()->cancel_wakeup(this,READ_MASK);
 }
 int SVC_Handler::sendfd(const void* msg,uint32_t size)
 {
@@ -137,11 +136,12 @@ int Reactor::schedule_wakeup(EVENT_HANDLE eventHandle,Event_Handle_Base* _handle
 
 int Reactor::_schedule_wakeup(EVENT_HANDLE eventHandle,Event_Handle_Base* _handle)
 {
+	AutoLock<Thread_Mutex> _auMutex(&m_mutex);
 	event_callback_fn fun=GetCallFun(eventHandle);
 	if(NULL==fun)return 0;
 	if(m_SvcHandleList.find(_handle)==m_SvcHandleList.end())
 	{
-		m_SvcHandleList[_handle].flag=eventHandle|PERSIST_MASK;
+		m_SvcHandleList[_handle].flag=eventHandle;
 		for (int i=0;i!=EVENT_MASK_MAX;i++)
 		{
 			m_SvcHandleList[_handle]._reactor_event[i]=0;
@@ -150,10 +150,10 @@ int Reactor::_schedule_wakeup(EVENT_HANDLE eventHandle,Event_Handle_Base* _handl
 	}
 	else
 	{
-		if(!(m_SvcHandleList[_handle].flag&eventHandle))return 0;
+		if(m_SvcHandleList[_handle].flag&eventHandle)return 0;
 		m_SvcHandleList[_handle].flag|=eventHandle;
 	}
-	m_SvcHandleList[_handle]._reactor_event[logn2(eventHandle)]=event_new(base,_handle->m_peer,eventHandle|PERSIST_MASK,fun,_handle);
+	m_SvcHandleList[_handle]._reactor_event[logn2(eventHandle)]=event_new(base,_handle->m_peer,eventHandle,fun,_handle);
 	event_add(m_SvcHandleList[_handle]._reactor_event[logn2(eventHandle)],NULL);
 	return 0;
 }
@@ -180,7 +180,7 @@ int Reactor::cancel_wakeup(Event_Handle_Base* _handle,EVENT_HANDLE eventhandle)
 }
 int Reactor::_cancel_wakeup(Event_Handle_Base* _handle,EVENT_HANDLE eventhandle)
 {
-
+		AutoLock<Thread_Mutex> _auMutex(&m_mutex);
 	if(m_SvcHandleList.find(_handle)==m_SvcHandleList.end())
 	{
 		return 0;
@@ -190,7 +190,10 @@ int Reactor::_cancel_wakeup(Event_Handle_Base* _handle,EVENT_HANDLE eventhandle)
 	{
 		return 0;
 	}
-	event_del(m_SvcHandleList[_handle]._reactor_event[logn2(eventhandle)]);
+	if(eventhandle==TIMER_MASK||eventhandle==TIMEOUT_MASK)
+	{
+		event_del(m_SvcHandleList[_handle]._reactor_event[logn2(eventhandle)]);
+	}
 	m_SvcHandleList[_handle].flag&= ~(1<<logn2(eventhandle));
 	return 0;
 }
@@ -211,6 +214,7 @@ int Reactor::clear_wakeup(Event_Handle_Base* handle)
 }
 int Reactor::_schedule_wakeup(timeval _timeval,Event_Handle_Base* _handle)
 {
+		AutoLock<Thread_Mutex> _auMutex(&m_mutex);
 	EVENT_HANDLE eventHandle=TIMER_MASK;
 	event_callback_fn fun=GetCallFun(eventHandle);
 	if(NULL==fun)return 0;
@@ -260,19 +264,31 @@ void Reactor::on_append_start(void* vp_data,void* _pthis)
 void on_read(int fd, short ev, void *arg)
 {
 	Event_Handle_Base* _handle=(Event_Handle_Base*)arg;
+	_handle->Reactor_()->_cancel_wakeup(_handle,READ_MASK);
 	if(_handle->handle_input()==-1)
 	{
+	
 		_handle->handle_close();
+	}
+	else
+	{
+		_handle->Reactor_()->_schedule_wakeup(READ_MASK,_handle);
 	}
 	return;
 }
 void on_write(int fd, short ev, void *arg)
 {
 	Event_Handle_Base* _handle=(Event_Handle_Base*)arg;
+	_handle->Reactor_()->_cancel_wakeup(_handle,WRITE_MASK);
 	if(_handle->handle_output()==-1)
 	{
 		_handle->handle_close();
 	}
+	else
+	{
+			_handle->Reactor_()->_schedule_wakeup(WRITE_MASK,_handle);
+	}
+	
 	return;
 }
 void on_timeout(int fd, short ev, void *arg)

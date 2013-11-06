@@ -1,5 +1,5 @@
 #include "config.h"
-#include "Tokenizer.h"
+#include "../shared/Tokenizer.h"
 int main()
 {
 	Config conf;

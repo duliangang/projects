@@ -78,11 +78,12 @@ public:
 	virtual int cancel_wakeup(Event_Handle_Base* handle_,EVENT_HANDLE eventhandle);
 	virtual int clear_wakeup(Event_Handle_Base* handle);
 	virtual int schedule_wakeup(timeval _timeval,Event_Handle_Base* _handle);
-	void run();
-private:
 	int _schedule_wakeup(EVENT_HANDLE eventHandle,Event_Handle_Base* _handle);
 	int _schedule_wakeup(timeval _timeval,Event_Handle_Base* _handle);
 	int _cancel_wakeup(Event_Handle_Base* handle_,EVENT_HANDLE eventhandle);
+	void run();
+private:
+	
 	static void on_append_start(void*,void*);
 	struct Reactor_temp_data
 	{
@@ -202,6 +203,7 @@ int svc_accept<SVC_SOCK>::shutdown()
 	while(itr!=m_shList.end())
 	{
 		(*itr)->close();
+		++itr;
 	}
 	m_stat=DESTORY;
 	return 0;
@@ -214,13 +216,13 @@ svc_accept<SVC_SOCK>::~svc_accept()
 	while(itr!=m_shList.end())
 	{
 		delete *itr;
+		++itr;
 	}
 	delete Reactor_();
 }
 template<class SVC_SOCK>
 int svc_accept<SVC_SOCK>::handle_input()
 {
-	0;
 	struct sockaddr_in addr_;
 	socklen_t addrlen = sizeof(addr_);
 	int yes = 1;
@@ -230,14 +232,17 @@ int svc_accept<SVC_SOCK>::handle_input()
 		return -1;
 	}
 	evutil_make_socket_nonblocking(cfd);
-	evutil_make_socket_closeonexec(cfd);
+	//evutil_make_socket_closeonexec(cfd);
 	SVC_SOCK* sh=NULL;
+
 	make_svc_handler(sh);
 	if(sh==NULL)return 0;
 	sh->create(cfd,(sockaddr*)&addr_);
 	sh->open();
+	
 	AutoLock<Thread_Mutex> _mu(&mutex);
 	m_shList.push_back(sh);
+	
 	return 0;
 }
 
