@@ -440,7 +440,10 @@ public:
 	{
 		return append((const uint8_t *)src, cnt);
 	}
-
+	void append(const void *src, size_t cnt)
+	{
+		return append((const uint8_t *)src, cnt);
+	}
 	void append(const wchar_t *src, size_t cnt)
 	{
 		return append((const uint8_t *)src, cnt*2);

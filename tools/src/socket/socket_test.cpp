@@ -226,73 +226,73 @@ void DecodeSocket::OnClose()
 	printf("%s close\n","clent");
 }
 
-
-extern int main(int argc, char **argv)
-{
-
-	//Sleep(10000);
-#ifdef WIN32
-	WSADATA wsaData;
-
-	int Ret;
-
-	// Initialize Winsock version 2.2
-
-	if ((Ret = WSAStartup(MAKEWORD(2,2), &wsaData)) != 0)
-	{
-		// NOTE: Since Winsock failed to load we cannot use 
-		// WSAGetLastError to determine the specific error for
-		// why it failed. Instead we can rely on the return 
-		// status of WSAStartup.
-
-		printf("WSAStartup failed with error %d\n", Ret);
-		return 0;
-	}
-
-	// Setup Winsock communication code here 
-
-	// When your application is finished call WSACleanup
-	
-
-#endif
-	Reactor* r=new Reactor();
-	struct addrinfo hints;
-
-	
-	//hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-	//hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
-	//hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
-	//hints.ai_protocol = 0;          /* Any protocol */
-	//hints.ai_canonname = NULL;
-	//hints.ai_addr = NULL;
-	//hints.ai_next = NULL;
-
-	struct sockaddr_in sock_addr;
-	memset(&sock_addr, 0,sizeof( sockaddr_in));
-	sock_addr.sin_port=htons(5981);
-	sock_addr.sin_family=AF_INET;
-	sock_addr.sin_addr.S_un.S_addr=htonl(INADDR_ANY);
-	
-	ServerReactor acceptor;
-	//addrinfo* bind_addr;
-	//int err=getaddrinfo(NULL,"0",&hints,&bind_addr);
-	/*if(0!=err)
-	{
-		printf("cannot get addrinfo:error %s",WSAGetLastError ());
-		return 0;
-	}*/
-	
-	if (acceptor.open(&sock_addr,r) == -1)
-	{
-		fprintf(stderr,"bind error");
-	}
-	acceptor.run_reactor_event_loop();
-#ifdef WIN32
-	if (WSACleanup() == SOCKET_ERROR)
-	{
-		printf("WSACleanup failed with error %d\n", WSAGetLastError());
-	}
-#endif
-	return 0;
-
-};	
+//
+//extern int main(int argc, char **argv)
+//{
+//
+//	//Sleep(10000);
+//#ifdef WIN32
+//	WSADATA wsaData;
+//
+//	int Ret;
+//
+//	// Initialize Winsock version 2.2
+//
+//	if ((Ret = WSAStartup(MAKEWORD(2,2), &wsaData)) != 0)
+//	{
+//		// NOTE: Since Winsock failed to load we cannot use 
+//		// WSAGetLastError to determine the specific error for
+//		// why it failed. Instead we can rely on the return 
+//		// status of WSAStartup.
+//
+//		printf("WSAStartup failed with error %d\n", Ret);
+//		return 0;
+//	}
+//
+//	// Setup Winsock communication code here 
+//
+//	// When your application is finished call WSACleanup
+//	
+//
+//#endif
+//	Reactor* r=new Reactor();
+//	struct addrinfo hints;
+//
+//	
+//	//hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+//	//hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
+//	//hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
+//	//hints.ai_protocol = 0;          /* Any protocol */
+//	//hints.ai_canonname = NULL;
+//	//hints.ai_addr = NULL;
+//	//hints.ai_next = NULL;
+//
+//	struct sockaddr_in sock_addr;
+//	memset(&sock_addr, 0,sizeof( sockaddr_in));
+//	sock_addr.sin_port=htons(5981);
+//	sock_addr.sin_family=AF_INET;
+//	sock_addr.sin_addr.S_un.S_addr=htonl(INADDR_ANY);
+//	
+//	ServerReactor acceptor;
+//	//addrinfo* bind_addr;
+//	//int err=getaddrinfo(NULL,"0",&hints,&bind_addr);
+//	/*if(0!=err)
+//	{
+//		printf("cannot get addrinfo:error %s",WSAGetLastError ());
+//		return 0;
+//	}*/
+//	
+//	if (acceptor.open(&sock_addr,r) == -1)
+//	{
+//		fprintf(stderr,"bind error");
+//	}
+//	acceptor.run_reactor_event_loop();
+//#ifdef WIN32
+//	if (WSACleanup() == SOCKET_ERROR)
+//	{
+//		printf("WSACleanup failed with error %d\n", WSAGetLastError());
+//	}
+//#endif
+//	return 0;
+//
+//};	
