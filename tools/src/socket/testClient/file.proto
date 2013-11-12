@@ -1,0 +1,6 @@
+message TestMessage
+{
+ 	required uint32 guid=1;
+ 	required uint32 length=2;
+ 	optional bytes data=3;
+}
