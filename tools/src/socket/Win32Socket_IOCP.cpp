@@ -88,7 +88,9 @@ HANDLE CSocketMgr::m_hIOCP=0;
 				 OVERLAPPEDPLUS* olplus=CONTAINING_RECORD(_ol,OVERLAPPEDPLUS,_overlapped);
 				 int op=olplus->opcode;
 				 delete[] olplus->wbuf.buf;
+				 olplus->wbuf.buf=NULL;
 				 delete olplus;
+				 olplus=NULL;
 				 //主动请求关闭
 				 if(op==OP_SHUTDOWN)
 				 {
@@ -132,7 +134,9 @@ HANDLE CSocketMgr::m_hIOCP=0;
 				 break;
 			 }
 			 delete[] olplus->wbuf.buf;
+			 olplus->wbuf.buf=NULL;
 			 delete olplus;
+			 olplus=NULL;
 			 dwKey->pushReadEvent();
 			 //OVERLAPPEDPLUS* ol=new OVERLAPPEDPLUS();// ....对OL结构进行初始化后
 			 //ol->wbuf.buf=ol->buffer;
