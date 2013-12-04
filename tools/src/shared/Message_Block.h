@@ -306,9 +306,9 @@ public:
 			clear();
 			return ;
 		}
-		size_t i=_wpos;
-		_wpos=0;
-		append(rd_ptr(),i-_rpos);
+		
+		memcpy(&(_storage[0]),&(_storage[_rpos]),_wpos-_rpos);
+		_wpos=_wpos-_rpos;
 		_rpos=0;
 	}
 	size_t wpos() const { return _wpos; }
@@ -571,7 +571,7 @@ public:
 	}
 
 protected:
-	size_t _rpos, _wpos;
+	volatile size_t _rpos, _wpos;
 	std::vector<uint8_t> _storage;
 };
 

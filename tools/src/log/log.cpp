@@ -37,7 +37,7 @@ std::_tstring Log::GetConfigStringDefault(std::_tstring base, const _tchar* name
 }
 
 // Returns default logger if the requested logger is not found
-Logger* Log::GetLoggerByType(LogFilterType filter)
+Logger* Log::GetLoggerByType(uint8_t filter)
 {
 	LoggerMap::iterator it = loggers.begin();
 	while (it != loggers.end() && it->second.getType() != filter)
@@ -137,7 +137,7 @@ void Log::CreateAppenderFromConfig(const _tchar* name)
 }
 
 
-bool Log::ShouldLog(LogFilterType type, LogLevel level) const
+bool Log::ShouldLog(uint8_t type, LogLevel level) const
 {
 	LoggerMap::const_iterator it = loggers.find(type);
 	if (it != loggers.end())
@@ -151,7 +151,11 @@ bool Log::ShouldLog(LogFilterType type, LogLevel level) const
 
 	return false;
 }
-
+void Log::setFilterString(const std::map<uint8_t,std::_tstring>& FilterStringList)
+{
+	Appender::MapLogFilterTypeString=FilterStringList;
+	return ;
+}
 void Log::CreateLoggerFromConfig(const _tchar* name)
 {
 	if (!name || *name == '\0')
@@ -201,7 +205,8 @@ void Log::CreateLoggerFromConfig(const _tchar* name)
 		return;
 	}
 
-	logger.Create(name, LogFilterType(type), level);
+	logger.Create(name, uint8_t(type), level);
+	Appender::MapLogFilterTypeString[type]=name;
 	//fprintf(stdout, "Log::CreateLoggerFromConfig: Created Logger %s, Type %u, mask %u\n", name, LogFilterType(type), level); // DEBUG - RemoveMe
 
 	++iter;
@@ -256,13 +261,20 @@ void Log::ReadLoggersFromConfig()
 }
 
 
-void Log::va_log(LogFilterType filter, LogLevel level, _tchar const* str, va_list argptr)
+void Log::va_log(uint8_t filter, LogLevel level, wchar_t const* str, va_list argptr)
 {
-	_tchar text[MAX_QUERY_LEN];
-	_tvsnprintf(text, MAX_QUERY_LEN, str, argptr);
+	wchar_t text[MAX_QUERY_LEN];
+	_vsnwprintf(text, MAX_QUERY_LEN, str, argptr);
 	write(new LogMessage(level, filter, text));
 }
-
+void Log::va_log(uint8_t filter, LogLevel level, char const* str, va_list argptr)
+{
+	char text[MAX_QUERY_LEN];
+	vsnprintf(text, MAX_QUERY_LEN, str, argptr);
+	std::wstring wstr;
+	ConsoleToWStr(text,wstr);
+	write(new LogMessage(level, filter, wstr));
+}
 void Log::write(LogMessage* msg)
 {
 	msg->text.append(_T("\n"));
@@ -322,12 +334,21 @@ bool Log::SetLogLevel(std::_tstring const& name, const _tchar* newLevelc, bool i
 }
 
 
-
-void Log::outTrace(LogFilterType filter, const _tchar * str, ...)
+void Log::outTrace(uint8_t filter, char const* str, ...)
 {
 	if (!str || !ShouldLog(filter, LOG_LEVEL_TRACE))
 		return;
+	va_list ap;
+	va_start(ap, str);
 
+	va_log(filter, LOG_LEVEL_TRACE, str, ap);
+
+	va_end(ap);
+}
+void Log::outTrace(uint8_t filter, const wchar_t * str, ...)
+{
+	if (!str || !ShouldLog(filter, LOG_LEVEL_TRACE))
+		return;
 	va_list ap;
 	va_start(ap, str);
 
@@ -336,7 +357,20 @@ void Log::outTrace(LogFilterType filter, const _tchar * str, ...)
 	va_end(ap);
 }
 
-void Log::outDebug(LogFilterType filter, const _tchar * str, ...)
+
+void Log::outDebug(uint8_t filter, const char * str, ...)
+{
+	if (!str || !ShouldLog(filter, LOG_LEVEL_DEBUG))
+		return;
+
+	va_list ap;
+	va_start(ap, str);
+
+	va_log(filter, LOG_LEVEL_DEBUG, str, ap);
+
+	va_end(ap);
+}
+void Log::outDebug(uint8_t filter, const wchar_t * str, ...)
 {
 	if (!str || !ShouldLog(filter, LOG_LEVEL_DEBUG))
 		return;
@@ -349,7 +383,7 @@ void Log::outDebug(LogFilterType filter, const _tchar * str, ...)
 	va_end(ap);
 }
 
-void Log::outInfo(LogFilterType filter, const _tchar * str, ...)
+void Log::outInfo(uint8_t filter, const wchar_t * str, ...)
 {
 	if (!str || !ShouldLog(filter, LOG_LEVEL_INFO))
 		return;
@@ -361,8 +395,19 @@ void Log::outInfo(LogFilterType filter, const _tchar * str, ...)
 
 	va_end(ap);
 }
+void Log::outInfo(uint8_t filter, const char * str, ...)
+{
+	if (!str || !ShouldLog(filter, LOG_LEVEL_INFO))
+		return;
 
-void Log::outWarn(LogFilterType filter, const _tchar * str, ...)
+	va_list ap;
+	va_start(ap, str);
+
+	va_log(filter, LOG_LEVEL_INFO, str, ap);
+
+	va_end(ap);
+}
+void Log::outWarn(uint8_t filter, const wchar_t * str, ...)
 {
 	if (!str || !ShouldLog(filter, LOG_LEVEL_WARN))
 		return;
@@ -374,8 +419,19 @@ void Log::outWarn(LogFilterType filter, const _tchar * str, ...)
 
 	va_end(ap);
 }
+void Log::outWarn(uint8_t filter, const char * str, ...)
+{
+	if (!str || !ShouldLog(filter, LOG_LEVEL_WARN))
+		return;
 
-void Log::outError(LogFilterType filter, const _tchar * str, ...)
+	va_list ap;
+	va_start(ap, str);
+
+	va_log(filter, LOG_LEVEL_WARN, str, ap);
+
+	va_end(ap);
+}
+void Log::outError(uint8_t filter, const wchar_t * str, ...)
 {
 	if (!str || !ShouldLog(filter, LOG_LEVEL_ERROR))
 		return;
@@ -387,8 +443,32 @@ void Log::outError(LogFilterType filter, const _tchar * str, ...)
 
 	va_end(ap);
 }
+void Log::outError(uint8_t filter, const char * str, ...)
+{
+	if (!str || !ShouldLog(filter, LOG_LEVEL_ERROR))
+		return;
 
-void Log::outFatal(LogFilterType filter, const _tchar * str, ...)
+	va_list ap;
+	va_start(ap, str);
+
+	va_log(filter, LOG_LEVEL_ERROR, str, ap);
+
+	va_end(ap);
+}
+void Log::outFatal(uint8_t filter, const wchar_t * str, ...)
+{
+	if (!str || !ShouldLog(filter, LOG_LEVEL_FATAL))
+		return;
+
+	va_list ap;
+	va_start(ap, str);
+
+	va_log(filter, LOG_LEVEL_FATAL, str, ap);
+
+	va_end(ap);
+}
+
+void Log::outFatal(uint8_t filter, const char * str, ...)
 {
 	if (!str || !ShouldLog(filter, LOG_LEVEL_FATAL))
 		return;
@@ -403,12 +483,14 @@ void Log::outFatal(LogFilterType filter, const _tchar * str, ...)
 
 
 
-
-
 void Log::Close()
 {
-	delete worker;
-	worker = NULL;
+	if(worker)
+	{
+		delete worker;
+		worker = NULL;
+	}
+	
 	m_config=NULL;
 	loggers.clear();
 	for (AppenderMap::iterator it = appenders.begin(); it != appenders.end(); ++it)
@@ -421,6 +503,10 @@ void Log::Close()
 
 void Log::LoadFromConfig(const Config* conf)
 {
+	if(!conf)
+	{
+		return ;
+	}
 	Close();
 	worker = new LogWorker();
 	m_config=conf;

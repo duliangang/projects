@@ -39,6 +39,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>D:\github\projects\protobuf-2.5.0\src;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\github\projects\protobuf-2.5.0\vsprojects\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -54,6 +56,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -74,7 +77,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="iocp_test.cpp" />
+    <ClCompile Include="..\..\src\log\Appender.cpp" />
+    <ClCompile Include="..\..\src\log\AppenderConsole.cpp" />
+    <ClCompile Include="..\..\src\log\AppenderFile.cpp" />
+    <ClCompile Include="..\..\src\log\log.cpp" />
+    <ClCompile Include="..\..\src\log\Logger.cpp" />
+    <ClCompile Include="..\..\src\log\LogWorker.cpp" />
+    <ClCompile Include="..\..\src\shared\Util.cpp" />
+    <ClCompile Include="..\..\src\socket\testClient\cpp_out\file.pb.cc" />
+    <ClCompile Include="..\..\src\socket\Win32Socket_IOCP.cpp" />
+    <ClCompile Include="..\..\src\socket\win32Socket_IOCP_test.cpp" />
+    <ClCompile Include="..\..\src\thread\base.cpp" />
+    <ClCompile Include="..\..\src\thread\samaphore.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\socket\Win32Socket_IOCP.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -17,7 +17,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -39,6 +39,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)\bin\libD\</OutDir>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -77,6 +79,7 @@
     <ClInclude Include="..\src\log\Appender.h" />
     <ClInclude Include="..\src\log\AppenderConsole.h" />
     <ClInclude Include="..\src\log\AppenderFile.h" />
+    <ClInclude Include="..\src\log\AppenderDB.h" />
     <ClInclude Include="..\src\log\log.h" />
     <ClInclude Include="..\src\log\Logger.h" />
     <ClInclude Include="..\src\log\LogWorker.h" />
@@ -84,12 +87,14 @@
     <ClInclude Include="..\src\shared\Util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\config\config.cpp" />
     <ClCompile Include="..\src\log\Appender.cpp" />
     <ClCompile Include="..\src\log\AppenderConsole.cpp" />
     <ClCompile Include="..\src\log\AppenderFile.cpp" />
     <ClCompile Include="..\src\log\log.cpp" />
     <ClCompile Include="..\src\log\Logger.cpp" />
     <ClCompile Include="..\src\log\LogWorker.cpp" />
+    <ClCompile Include="..\src\shared\Convert.cpp" />
     <ClCompile Include="..\src\shared\Util.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

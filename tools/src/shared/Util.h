@@ -240,8 +240,12 @@ inline void wstrToLower(std::wstring& str)
 
 std::wstring GetMainPartOfName(std::wstring wname, uint32_t declension);
 
+std::wstring ConsoleToWStr(const std::string& constr,std::wstring& wstr);
+std::string WStrToConsole(const std::wstring& wstr,std::string& constr);
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr);
 bool consoleToUtf8(const std::string& conStr, std::string& utf8str);
 bool Utf8FitTo(const std::string& str, std::wstring search);
 void utf8printf(FILE* out, const char *str, ...);
 void vutf8printf(FILE* out, const char *str, va_list* ap);
+void utf8printf(FILE* out, const wchar_t *str, ...);
+void vutf8printf(FILE* out, const wchar_t *str, va_list* ap);

@@ -5,11 +5,7 @@
 #include <map>
 #include <vector>
 #include <time.h>
-enum LogFilterType
-{
-	 LOG_FILTER_GENERAL                           =  0,     // This one should only be used inside Log.cpp
-	 LOG_FILTER_NETWORK_IO,	
-};
+#define LOG_FILTER_GENERAL 255
 enum LogLevel
 {
 	LOG_LEVEL_DISABLED                           = 0,
@@ -26,6 +22,7 @@ enum AppenderType
 	APPENDER_CONSOLE,
 	APPENDER_FILE,
 	APPENDER_SOCKET,
+	APPENDER_DB,
 };
 
 
@@ -43,7 +40,7 @@ const uint8_t MaxLogLevels = 6;
 
 struct LogMessage
 {
-	LogMessage(LogLevel _level, LogFilterType _type, std::_tstring _text)
+	LogMessage(LogLevel _level, uint8_t _type, std::_tstring _text)
 		: level(_level)
 		, type(_type)
 		, text(_text)
@@ -55,15 +52,17 @@ struct LogMessage
 	std::_tstring getTimeStr();
 
 	LogLevel level;
-	LogFilterType type;
+	uint8_t type;
 	std::_tstring text;
 	std::_tstring prefix;
 	std::_tstring param1;
 	time_t mtime;
 };
+class Log;
 class Appender
 {
 public:
+	friend class Log;
 	Appender(uint8_t _id, std::_tstring const& name, AppenderType type = APPENDER_NONE, LogLevel level = LOG_LEVEL_DISABLED, AppenderFlags flags = APPENDER_FLAGS_NONE);
 	virtual ~Appender();
 
@@ -76,7 +75,7 @@ public:
 	void setLogLevel(LogLevel);
 	void write(LogMessage& message);
 	static const _tchar* getLogLevelString(LogLevel level);
-	static const _tchar* getLogFilterTypeString(LogFilterType type);
+	static const _tchar* getLogFilterTypeString(uint8_t type);
 
 private:
 	virtual void _write(LogMessage& /*message*/) = 0;
@@ -86,6 +85,7 @@ private:
 	AppenderType type;
 	LogLevel level;
 	AppenderFlags flags;
+	static std::map<uint8_t,std::_tstring> MapLogFilterTypeString;
 };
 
 typedef std::map<uint8_t, Appender*> AppenderMap;

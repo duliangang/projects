@@ -102,7 +102,7 @@ int Thread_Mutex::tryacquire()
 void Thread_Mutex::release()
 {
 	release_lock_opt(&lock_);
-}
+}/*
 Task_Base::Task_Base(int thread_count):m_info(new threadInfo)
 {
 	m_threadCount=thread_count;
@@ -196,4 +196,4 @@ void Task_Base::join()
 		if(m_threadList[i]!=NULL)
 		m_threadList[i]->join();
 	}
-}
+}*/

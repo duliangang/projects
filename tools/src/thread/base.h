@@ -2,9 +2,6 @@
 #define _BASE_H_
 #include "../shared/Define.h"
 #include "semaphore.h"
-#include <boost/thread/thread.hpp>
-#include <boost/function/function0.hpp>  
-#include <boost/shared_ptr.hpp>
 #include <queue>
 #ifdef WIN32
 #include <Windows.h>
@@ -111,47 +108,6 @@ private:
 };
 
 
-struct threadInfo
-{
-	enum ThreadStatu
-	{
-		CREATE=0,
-		START=1,
-		STOP=2,
-		END=3,
-		DESTORY=4,
-	};
-	ThreadStatu statu;
-};
-class Task_Base
-{
-	typedef  threadInfo::ThreadStatu Task_Statu;
-public:
-	struct BLOCK
-	{
-		void* msg;
-		int32_t size;
-		boost::shared_ptr<threadInfo> thread_info;
-	};
-	Task_Base(int thread_count=1);
-	int open();
-	void task(int thread_index);
-	virtual void svc()=0;
-	 Task_Statu statu(){return m_info->statu;}
-	int putmsgto(void* msg,int32_t size,Task_Base* target);
-	int putmsg(const BLOCK& block);
-	int32_t getmsg(BLOCK& block);
-	virtual void close(){};
-	void join();
-	~Task_Base();
-protected:
-    boost::shared_ptr<threadInfo> m_info;
-	std::queue<BLOCK> m_msgBlockList;
-private:
-	
-	int m_threadCount;
-	int m_currentThreadCount;
-	Thread_Mutex m_mutex;
-	std::vector<boost::thread*> m_threadList;
-};
+
+
 #endif

@@ -5,7 +5,7 @@ Logger::Logger(): name(_T("")), type(LOG_FILTER_GENERAL), level(LOG_LEVEL_DISABL
 {
 }
 
-void Logger::Create(std::_tstring const& _name, LogFilterType _type, LogLevel _level)
+void Logger::Create(std::_tstring const& _name, uint8_t _type, LogLevel _level)
 {
 	name = _name;
 	type = _type;
@@ -24,7 +24,7 @@ std::_tstring const& Logger::getName() const
 	return name;
 }
 
-LogFilterType Logger::getType() const
+uint8_t Logger::getType() const
 {
 	return type;
 }

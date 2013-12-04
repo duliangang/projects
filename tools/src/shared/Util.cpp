@@ -1,5 +1,6 @@
 #include "Util.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <iostream>
 #if PLATFORM==PLATFORM_WINDOWS
@@ -12,8 +13,8 @@ static const int DAY = 24*HOUR;
 
 Tokenizer::Tokenizer(const std::_tstring &src, const _tchar sep, uint32_t vectorReserve)
 {
-	m_str = new _tchar[src.length() + sizeof(_tchar)];
-	memcpy(m_str, src.c_str(), src.length()+sizeof(_tchar));
+	m_str = new _tchar[src.length() + 1];
+	memcpy(m_str, src.c_str(), (src.length()+1)*sizeof(_tchar));
 
 	if (vectorReserve)
 		m_storage.reserve(vectorReserve);
@@ -170,11 +171,11 @@ void utf8truncate(std::string& utf8str, size_t len)
             return;
 
         std::wstring wstr;
-        wstr.resize(wlen);
+        wstr.resize(wlen,0);
         utf8::utf8to16(utf8str.c_str(), utf8str.c_str()+utf8str.size(), &wstr[0]);
-        wstr.resize(len);
+        wstr.resize(len,0);
         char* oend = utf8::utf16to8(wstr.c_str(), wstr.c_str()+wstr.size(), &utf8str[0]);
-        utf8str.resize(oend-(&utf8str[0]));                 // remove unused tail
+        utf8str.resize(oend-(&utf8str[0]),0);                 // remove unused tail
     }
     catch(std::exception)
     {
@@ -216,7 +217,7 @@ bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr)
     {
         if (size_t len = utf8::distance(utf8str.c_str(), utf8str.c_str()+utf8str.size()))
         {
-            wstr.resize(len);
+            wstr.resize(len,0);
             utf8::utf8to16(utf8str.c_str(), utf8str.c_str()+utf8str.size(), &wstr[0]);
         }
     }
@@ -234,12 +235,12 @@ bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str)
     try
     {
         std::string utf8str2;
-        utf8str2.resize(size*4);                            // allocate for most long case
+        utf8str2.resize(size*4,0);                            // allocate for most long case
 
         if (size)
         {
             char* oend = utf8::utf16to8(wstr, wstr+size, &utf8str2[0]);
-            utf8str2.resize(oend-(&utf8str2[0]));               // remove unused tail
+            utf8str2.resize(oend-(&utf8str2[0]),0);               // remove unused tail
         }
         utf8str = utf8str2;
     }
@@ -257,12 +258,12 @@ bool WStrToUtf8(std::wstring wstr, std::string& utf8str)
     try
     {
         std::string utf8str2;
-        utf8str2.resize(wstr.size()*4);                     // allocate for most long case
+        utf8str2.resize(wstr.size()*4,0);                     // allocate for most long case
 
         if (wstr.size())
         {
             char* oend = utf8::utf16to8(wstr.c_str(), wstr.c_str()+wstr.size(), &utf8str2[0]);
-            utf8str2.resize(oend-(&utf8str2[0]));                // remove unused tail
+            utf8str2.resize(oend-(&utf8str2[0]),0);                // remove unused tail
         }
         utf8str = utf8str2;
     }
@@ -321,7 +322,39 @@ std::wstring GetMainPartOfName(std::wstring wname, uint32_t declension)
 
     return wname;
 }
+std::wstring ConsoleToWStr(const std::string& constr,std::wstring& wstr)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+	int len=MultiByteToWideChar(CP_ACP,0,constr.c_str(),constr.length(),NULL,0); 
+	wstr.resize(len+1);
+	len=MultiByteToWideChar(CP_ACP,0,constr.c_str(),constr.length(),&(wstr[0]),len);
+	return wstr;
 
+
+
+#else
+
+	int len=mbstowcs(NULL,constr.c_str(),0);
+	wstr.resize(len+1);
+	len=mbstowcs(&(wstr[0]),constr.c_str(),wstr.size());
+	return wstr;
+#endif
+}
+std::string WStrToConsole(const std::wstring& wstr,std::string& constr)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+	
+	int len=WideCharToMultiByte(CP_ACP,0,wstr.c_str(),wstr.length(),NULL,0,NULL,NULL); 
+	constr.resize(len+1);
+	len=WideCharToMultiByte(CP_ACP,0,wstr.c_str(),wstr.length(),&(constr[0]),len,NULL,NULL);
+	return constr;
+#else
+	int len =wcstombs(NULL,wstr.c_str(),0);
+	constr.resize(len+1);
+	len=wcstombs(&(constr[0]),wstr.c_str(),len);
+	return constr;
+#endif
+}
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr)
 {
 #if PLATFORM == PLATFORM_WINDOWS
@@ -329,7 +362,8 @@ bool utf8ToConsole(const std::string& utf8str, std::string& conStr)
     if (!Utf8toWStr(utf8str, wstr))
         return false;
 
-    conStr.resize(wstr.size());
+    conStr.resize(wstr.size(),0);
+
     CharToOemBuffW(&wstr[0], &conStr[0], wstr.size());
 #else
     // not implemented yet
@@ -343,7 +377,7 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str)
 {
 #if PLATFORM == PLATFORM_WINDOWS
     std::wstring wstr;
-    wstr.resize(conStr.size());
+    wstr.resize(conStr.size(),0);
     OemToCharBuffW(&conStr[0], &wstr[0], conStr.size());
 
     return WStrToUtf8(wstr, utf8str);
@@ -369,7 +403,13 @@ bool Utf8FitTo(const std::string& str, std::wstring search)
 
     return true;
 }
-
+void utf8printf(FILE* out, const wchar_t *str, ...)
+{
+	va_list ap;
+	va_start(ap, str);
+	vutf8printf(out,str,&ap);
+	 va_end(ap);
+}
 void utf8printf(FILE* out, const char *str, ...)
 {
     va_list ap;
@@ -377,7 +417,15 @@ void utf8printf(FILE* out, const char *str, ...)
     vutf8printf(out, str, &ap);
     va_end(ap);
 }
-
+void vutf8printf(FILE* out, const wchar_t *str, va_list* ap)
+{
+	 wchar_t wtemp_buf[32*1024];
+	 size_t wtemp_len =vswprintf(wtemp_buf,str,*ap);
+	 std::string utfstr;
+	 WStrToUtf8(wtemp_buf,wtemp_len,utfstr);
+	 fprintf(out, "%s", utfstr.c_str());
+	 return ;
+}
 void vutf8printf(FILE* out, const char *str, va_list* ap)
 {
 #if PLATFORM == PLATFORM_WINDOWS

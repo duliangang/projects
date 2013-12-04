@@ -17,7 +17,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -39,6 +39,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)\bin\libD\</OutDir>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -74,13 +76,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\pool\BufferPool.h" />
+    <ClInclude Include="..\src\pool\classPool.h" />
     <ClInclude Include="..\src\shared\Message_Block.h" />
+    <ClInclude Include="..\src\thread\apr\apr_base.h" />
+    <ClInclude Include="..\src\thread\apr\apr_root_pool.h" />
     <ClInclude Include="..\src\thread\base.h" />
+    <ClInclude Include="..\src\thread\define_allocator.h" />
     <ClInclude Include="..\src\thread\Msg_Queue_Ex.h" />
     <ClInclude Include="..\src\thread\semaphore.h" />
     <ClInclude Include="..\src\thread\singleton.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\pool\bufferPool.cpp" />
+    <ClCompile Include="..\src\thread\apr\apr_base.cpp" />
     <ClCompile Include="..\src\thread\base.cpp" />
     <ClCompile Include="..\src\thread\samaphore.cpp" />
     <ClCompile Include="..\src\thread\test_base_h.cpp" />

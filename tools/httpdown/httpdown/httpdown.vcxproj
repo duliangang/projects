@@ -10,10 +10,17 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\curl\down.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\curl\down.cpp" />
+    <ClCompile Include="..\..\src\curl\downfile.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DE8BEC8B-C821-41F7-A571-5AD9A172EC8F}</ProjectGuid>
+    <ProjectGuid>{F88C6CE3-E0BF-443E-B5E3-0B5CF025A48F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>socket_client_test</RootNamespace>
+    <RootNamespace>httpdown</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -39,7 +46,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>D:\github\projects\protobuf-2.5.0\vsprojects\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\projects\curl-7.32.0\include;D:\github\projects\tools\src;$(IncludePath)</IncludePath>
+    <EmbedManifest>false</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -50,13 +58,14 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\github\projects\protobuf-2.5.0\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>kernel32.lib;user32.lib;libprotobuf.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>D:\github\projects\tools\bin\exeD\$(ProjectName).exe</OutputFile>
+      <AdditionalLibraryDirectories>D:\github\projects\tools\bin\libD</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libapr-1.lib;thread.lib;Log.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -76,15 +85,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\src\socket\testClient\cpp_out\file.pb.cc" />
-    <ClCompile Include="client.cpp" />
-    <ClCompile Include="中文测试.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\src\socket\testClient\cpp_out\file.pb.h" />
-    <ClInclude Include="dispatcher.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -52,13 +52,15 @@ namespace ByteConverter
 static union { char c[4]; unsigned long mylong; } endian_test = {{ 'l', '?', '?', 'b' } };
 
 #define ENDIANNESS ((char)endian_test.mylong)
-#if  endian_test=='b'
-template<typename T> inline void EndianConvert(T& val) { ByteConverter::apply<T>(&val); }
-template<typename T> inline void EndianConvertReverse(T&) { }
-#else
-template<typename T> inline void EndianConvert(T&) { }
-template<typename T> inline void EndianConvertReverse(T& val) { ByteConverter::apply<T>(&val); }
-#endif
+
+template<typename T> inline T& EndianConvert(T& val) 
+{
+	if(ENDIANNESS=='l')
+	{
+		ByteConverter::apply<T>(&val); 
+	}
+	return val;
+}
 
 template<typename T> void EndianConvert(T*);         // will generate link error
 template<typename T> void EndianConvertReverse(T*);  // will generate link error
@@ -71,7 +73,7 @@ inline void EndianConvertReverse( int8_t&) { }
 
 
 const int MAX_QUERY_LEN = 4096;
-
+#include <iostream>
 #include <tchar.h>
 #ifdef _UNICODE
 #define _tchar TCHAR

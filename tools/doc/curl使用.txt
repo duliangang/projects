@@ -1,0 +1,2108 @@
+///cocos2d-x-3.0alpha0/cocos2dx/platform/third_party/ios/curl
+#ifndef __CURL_CURL_H
+#define __CURL_CURL_H
+
+
+/*
+ * 如果您有 libcurl 方面的问题，所有的文档和细节在这里找到：
+ *   http://curl.haxx.se/libcurl/
+ *
+ * curl-library 你可以访问下面的 web 页面订阅和退订邮件：
+ *   http://cool.haxx.se/mailman/listinfo/curl-library/
+ */
+
+#include "curlver.h"         /* libcurl 版本定义   */
+#include "curlbuild.h"       /* libcurl 构建定义 */
+#include "curlrules.h"       /* libcurl 规则定义 */
+
+/*
+ * 定义 Win32 ，当构建目标是 Win32 API
+ */
+
+#if (defined(_WIN32) || defined(__WIN32__)) && \
+     !defined(WIN32) && !defined(__SYMBIAN32__)
+#define WIN32
+#endif
+
+#include <stdio.h>
+#include <limits.h>
+
+#if defined(__FreeBSD__) && (__FreeBSD__ >= 2)
+/* 需要__ FreeBSD_version中的标记定义*/
+#include <osreldate.h>
+#endif
+
+/* 这里包含下面的东西，其主要是 time_t! */
+#include <sys/types.h>
+#include <time.h>
+
+#if defined(WIN32) && !defined(_WIN32_WCE) && !defined(__CYGWIN__)
+#if !(defined(_WINSOCKAPI_) || defined(_WINSOCK_H) || defined(__LWIP_OPT_H__))
+/* 检查 winsock2 包含的内容在 winsock.h 里面是否已经存在，因为他们不能在没有问题的时候共存
+*/
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
+#endif
+
+/* HP-UX 系统版本是 9, 因为 10 、 11 缺少 sys/select.h 所以基于
+   libc5-based Linux 系统不过时. 我们需要系统包含它（sys/select.h）! 
+ */
+#if defined(_AIX) || defined(__NOVELL_LIBC__) || defined(__NetBSD__) || \
+    defined(__minix) || defined(__SYMBIAN32__) || defined(__INTEGRITY) || \
+    defined(ANDROID) || defined(__ANDROID__) || \
+   (defined(__FreeBSD_version) && (__FreeBSD_version < 800000))
+#include <sys/select.h>
+#endif
+
+#if !defined(WIN32) && !defined(_WIN32_WCE)
+#include <sys/socket.h>
+#endif
+
+#if !defined(WIN32) && !defined(__WATCOMC__) && !defined(__VXWORKS__)
+#include <sys/time.h>
+#endif
+
+#ifdef __BEOS__
+#include <support/SupportDefs.h>
+#endif
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+typedef void CURL;
+
+/*
+ * Win32 、 Symbian OS DLL 链接的装饰到处功能.
+ * 避免使用 .def 文件构建 libcurl.dll.
+ */
+#if (defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__)) && \
+     !defined(CURL_STATICLIB)
+#if defined(BUILDING_LIBCURL)
+#define CURL_EXTERN  __declspec(dllexport)
+#else
+#define CURL_EXTERN  __declspec(dllimport)
+#endif
+#else
+
+#ifdef CURL_HIDDEN_SYMBOLS
+/*
+ * 默认 symbols 是隐藏的，这个定义可以让外部共享库可见  
+ * 
+ * 编译 library 后，再编译应用程序时，是否设置与否，都没有区别，.
+ */
+#define CURL_EXTERN CURL_EXTERN_SYMBOL
+#else
+#define CURL_EXTERN
+#endif
+#endif
+
+#ifndef curl_socket_typedef
+/* socket typedef */
+#if defined(WIN32) && !defined(__LWIP_OPT_H__)
+typedef SOCKET curl_socket_t;
+#define CURL_SOCKET_BAD INVALID_SOCKET
+#else
+typedef int curl_socket_t;
+#define CURL_SOCKET_BAD -1
+#endif
+#define curl_socket_typedef
+#endif /* curl_socket_typedef */
+
+struct curl_httppost {
+  struct curl_httppost *next;       /* 在列表中的下一个条目*/
+  char *name;                       /* 分配的名字指针 */
+  long namelength;                  /* 名字的长度 */
+  char *contents;                   /* 分配的内容数据指针 */
+  long contentslength;              /* 内容字段的长度	 */
+  char *buffer;                     /* 分配的缓冲区内容指针 */
+  long bufferlength;                /* 缓冲区内容字段的长度 */
+  char *contenttype;                /* 内容类型 */
+  struct curl_slist* contentheader; /* 这种样式的附加头列表（www.、 http://、https:// ） */
+  struct curl_httppost *more;       /* 如果一个字段名不止指向一个文件，这个链接应该链接到这些文件
+                                        */
+  long flags;                       /* 在下面定义 */
+#define HTTPPOST_FILENAME (1<<0)    /* 指定的内容是文件名 */
+#define HTTPPOST_READFILE (1<<1)    /* 指定的内容是文件名 */
+#define HTTPPOST_PTRNAME (1<<2)     /* 只存储名字指针
+                                       formfree 不是空闲（free）的*/
+#define HTTPPOST_PTRCONTENTS (1<<3) /* 只存储 内容指针
+                                       formfree 不是空闲（free）的 */
+#define HTTPPOST_BUFFER (1<<4)      /* 从缓冲区上传文件 */
+#define HTTPPOST_PTRBUFFER (1<<5)   /* 从指针内容上传文件 */
+#define HTTPPOST_CALLBACK (1<<6)    /* 通过常规的读 callback 获取数据，上传给定指针指向的文件内容
+                                    */
+
+  char *showfilename;               /* T要显示的文件名he file name to show. 如果没有设置将使用真实的文件名, (如果这是文件的一部分)
+                                     */
+  void *userp;                      /* 自定义指针使用了 HTTPPOST_CALLBACK posts 
+                                     */
+};
+
+typedef int (*curl_progress_callback)(void *clientp,
+                                      double dltotal,
+                                      double dlnow,
+                                      double ultotal,
+                                      double ulnow);
+
+#ifndef CURL_MAX_WRITE_SIZE
+  /* 实验证明 20 k 在 windosw 上是一个糟糕的上载缓冲区大小，一些奇怪的原因 16k 表现好了很多。我们的 ifndef 检查，允许该值更容易被那些爱冒险的人改变改变
+     实际上最小值大概是 400 bytes，自 libcurl 使用一个 buffer 它的大小从无到有(和网络发送操作无关).
+   */
+#define CURL_MAX_WRITE_SIZE 16384
+#endif
+
+#ifndef CURL_MAX_HTTP_HEADER
+/* 有一个风险是应该避免的，使用 libcurl 的一个never-ending 的 header 可能会导致服务器无限循环的执行一个请求
+*/
+#define CURL_MAX_HTTP_HEADER (100*1024)
+#endif
+
+/* return 一个有魔力的 write callback ,返回时,libcurl 会收到暂停接受当前传输的信号
+ */
+#define CURL_WRITEFUNC_PAUSE 0x10000001
+
+typedef size_t (*curl_write_callback)(char *buffer,
+                                      size_t size,
+                                      size_t nitems,
+                                      void *outstream);
+
+
+
+/* 枚举文件类型 */
+typedef enum {
+  CURLFILETYPE_FILE = 0,
+  CURLFILETYPE_DIRECTORY,
+  CURLFILETYPE_SYMLINK,
+  CURLFILETYPE_DEVICE_BLOCK,
+  CURLFILETYPE_DEVICE_CHAR,
+  CURLFILETYPE_NAMEDPIPE,
+  CURLFILETYPE_SOCKET,
+  CURLFILETYPE_DOOR, /* 现在可能只在 Sun Solaris */
+
+  CURLFILETYPE_UNKNOWN /* 应该永远不会发生 */
+} curlfiletype;
+
+#define CURLFINFOFLAG_KNOWN_FILENAME    (1<<0)
+#define CURLFINFOFLAG_KNOWN_FILETYPE    (1<<1)
+#define CURLFINFOFLAG_KNOWN_TIME        (1<<2)
+#define CURLFINFOFLAG_KNOWN_PERM        (1<<3)
+#define CURLFINFOFLAG_KNOWN_UID         (1<<4)
+#define CURLFINFOFLAG_KNOWN_GID         (1<<5)
+#define CURLFINFOFLAG_KNOWN_SIZE        (1<<6)
+#define CURLFINFOFLAG_KNOWN_HLINKCOUNT  (1<<7)
+
+    /* 结构体里面的内容依赖于现实中的已知的信息 (e.g. 通过 FTP LIST 解析). 请看 url_easy_setopt（3）手册这个结构体的 callbacks returning  -- 一些字段是强制性的，
+       另一些字段是可选的。标志字段具有特殊的意义. */
+struct curl_fileinfo {
+  char *filename;
+  curlfiletype filetype;
+  time_t time;
+  unsigned int perm;
+  int uid;
+  int gid;
+  curl_off_t size;
+  long int hardlinks;
+
+  struct {
+    /* 如果一些字段不为 NULL, 他是一个指向 b_data 的指针. */
+    char *time;
+    char *perm;
+    char *user;
+    char *group;
+    char *target; /* 一个指向 symlink 目标文件名的指针 */
+  } strings;
+
+  unsigned int flags;
+
+  /* 内部使用 */
+  char * b_data;
+  size_t b_size;
+  size_t b_used;
+};
+
+/* return  CURLOPT_CHUNK_BGN_FUNCTION 功能的代码*/
+#define CURL_CHUNK_BGN_FUNC_OK      0
+#define CURL_CHUNK_BGN_FUNC_FAIL    1 /* 告诉的lib结束任务 */
+#define CURL_CHUNK_BGN_FUNC_SKIP    2 /* 跳过这个块 */
+
+/*  如果启用了数据分割传输，那么开始一个单独数据块下载前这个 callback 被调用
+    请注意 "remains" 参数，只在 FTP 通配符，下载时使用，其他情况不使用
+*/
+typedef long (*curl_chunk_bgn_callback)(const void *transfer_info,
+                                        void *ptr,
+                                        int remains);
+
+/* return CURLOPT_CHUNK_END_FUNCTION 功能的代码*/
+#define CURL_CHUNK_END_FUNC_OK      0
+#define CURL_CHUNK_END_FUNC_FAIL    1 /* 告诉的lib结束任务 */
+
+/* 如果启用了数据分割传输 ，如果启用了数据分割传输，那么结束一个单独数据块下载后这个 callback 被调用.
+   请注意! 所有的快都会调用这个回调函数.
+   即使这个下载块在 CHUNK_BGN_FUNC 里面被跳过了。.
+   这就是为什么我们故需要 "transfer_info" 参数 ，为什么我们不关心 "remains" 参数的原因. */
+typedef long (*curl_chunk_end_callback)(void *ptr);
+
+/* return  FNMATCHFUNCTION 功能的代码 */
+#define CURL_FNMATCHFUNC_MATCH    0 /* 字符串对应的模式 */
+#define CURL_FNMATCHFUNC_NOMATCH  1 /* 模式不匹配的字符串 */
+#define CURL_FNMATCHFUNC_FAIL     2 /* 发生了错误 */
+
+/* 通配符下载模式匹配的回调类型. 
+   字符串匹配的模式, return CURL_FNMATCHFUNC_MATCH 值, etc. */
+typedef int (*curl_fnmatch_callback)(void *ptr,
+                                     const char *pattern,
+                                     const char *string);
+
+/* 这些返回代码是关于 seek（请求） callbacks */
+#define CURL_SEEKFUNC_OK       0
+#define CURL_SEEKFUNC_FAIL     1 /* 整个传输失败 */
+#define CURL_SEEKFUNC_CANTSEEK 2 /* 告诉 libcurl （请求）seeking 不可达, 
+                                    所以 libcurl 可能尝试其它的方法来代替 */
+typedef int (*curl_seek_callback)(void *instream,
+                                  curl_off_t offset,
+                                  int origin); /* 'whence' */   ;// 和出
+
+/*一个 read callback ,返回时,libcurl 会收到立即中止当前传输的信号 
+*/
+#define CURL_READFUNC_ABORT 0x10000000
+/* 一个 read callback ,返回时,libcurl 会收到暂停发送数据当前传输的信号 . */
+#define CURL_READFUNC_PAUSE 0x10000001
+
+typedef size_t (*curl_read_callback)(char *buffer,
+                                      size_t size,
+                                      size_t nitems,
+                                      void *instream);
+
+typedef enum  {
+  CURLSOCKTYPE_IPCXN, /* 创建一个特定的IP连接的插座 socket */
+  CURLSOCKTYPE_LAST   /* never use */
+} curlsocktype;
+
+/* 返回 libcurl  sockopt_callback 的信号信息: */
+#define CURL_SOCKOPT_OK 0
+#define CURL_SOCKOPT_ERROR 1 /* 导致libcurl的中止，并返回
+                                CURLE_ABORTED_BY_CALLBACK */
+#define CURL_SOCKOPT_ALREADY_CONNECTED 2
+
+typedef int (*curl_sockopt_callback)(void *clientp,
+                                     curl_socket_t curlfd,
+                                     curlsocktype purpose);
+
+struct curl_sockaddr {
+  int family;
+  int socktype;
+  int protocol;
+  unsigned int addrlen; /*  addrlen 是一个 socklen_t 类型，在7.780 前缺少这种类型
+                           turned 信息非常难懂
+                           */
+  struct sockaddr addr;
+};
+
+typedef curl_socket_t
+(*curl_opensocket_callback)(void *clientp,
+                            curlsocktype purpose,
+                            struct curl_sockaddr *address);
+
+typedef int
+(*curl_closesocket_callback)(void *clientp, curl_socket_t item);
+
+typedef enum {
+  CURLIOE_OK,            /* I/O 操作成功 */
+  CURLIOE_UNKNOWNCMD,    /* 命令是未知的回调*/
+  CURLIOE_FAILRESTART,   /* 未能重新读取 */
+  CURLIOE_LAST           /* never use */
+} curlioerr;
+
+typedef enum  {
+  CURLIOCMD_NOP,         /* 无操作*/
+  CURLIOCMD_RESTARTREAD, /* 重新启动读取流 */
+  CURLIOCMD_LAST         /* never use */
+} curliocmd;
+
+typedef curlioerr (*curl_ioctl_callback)(CURL *handle,
+                                         int cmd,
+                                         void *clientp);
+
+/*
+ * 下列 typedef's 签名包括 malloc, free, realloc, strdup and
+ * calloc respectively. 这些类型的函数指针可以被传递到
+ * curl_global_init_mem() 函数来设置用户定义的内存管理回调程序。
+ */
+typedef void *(*curl_malloc_callback)(size_t size);
+typedef void (*curl_free_callback)(void *ptr);
+typedef void *(*curl_realloc_callback)(void *ptr, size_t size);
+typedef char *(*curl_strdup_callback)(const char *str);
+typedef void *(*curl_calloc_callback)(size_t nmemb, size_t size);
+
+/* 数据类型传递给 information_callback*/
+typedef enum {
+  CURLINFO_TEXT = 0,
+  CURLINFO_HEADER_IN,    /* 1 */
+  CURLINFO_HEADER_OUT,   /* 2 */
+  CURLINFO_DATA_IN,      /* 3 */
+  CURLINFO_DATA_OUT,     /* 4 */
+  CURLINFO_SSL_DATA_IN,  /* 5 */
+  CURLINFO_SSL_DATA_OUT, /* 6 */
+  CURLINFO_END
+} curl_infotype;
+
+typedef int (*curl_debug_callback)
+       (CURL *handle,      /* 这涉及 处理/传输 */
+        curl_infotype type, /* 什么类型的数据 */
+        char *data,        /* 指向数据*/
+        size_t size,       /* 数据大小   */
+        void *userptr);    /* 请求的任何用户 */
+
+/* 所有可能的 curl 功能错误代码种类
+ 未来的版本可能返回其他值, 留的准备。
+
+ 最后随时添加新的返回代码. 从不* EVER *删除。返回
+ 代码必须保持一致！
+ */
+
+typedef enum {
+  CURLE_OK = 0,
+  CURLE_UNSUPPORTED_PROTOCOL,    /* 1 */
+  CURLE_FAILED_INIT,             /* 2 */
+  CURLE_URL_MALFORMAT,           /* 3 */
+  CURLE_NOT_BUILT_IN,            /* 4 - [2007年8月过时, 在2011年4月，重用] */
+  CURLE_COULDNT_RESOLVE_PROXY,   /* 5 */
+  CURLE_COULDNT_RESOLVE_HOST,    /* 6 */
+  CURLE_COULDNT_CONNECT,         /* 7 */
+  CURLE_FTP_WEIRD_SERVER_REPLY,  /* 8 */
+    CURLE_REMOTE_ACCESS_DENIED,    /* 9 由服务器拒绝服务
+                                    由于无法进入 - 登录失败时不返回. */
+  CURLE_FTP_ACCEPT_FAILED,       /* 10 - [已过时，在2006年4月
+                                    , 在2011年12月12日]*/
+  CURLE_FTP_WEIRD_PASS_REPLY,    /* 11 */
+  CURLE_FTP_ACCEPT_TIMEOUT,      /* 12 - 服务器受理超时
+                                    [已过时，在2007年8月,
+                                    r 2011年12月重用]*/
+  CURLE_FTP_WEIRD_PASV_REPLY,    /* 13 */
+  CURLE_FTP_WEIRD_227_FORMAT,    /* 14 */
+  CURLE_FTP_CANT_GET_HOST,       /* 15 */
+  CURLE_OBSOLETE16,              /* 16 - NOT USED */
+  CURLE_FTP_COULDNT_SET_TYPE,    /* 17 */
+  CURLE_PARTIAL_FILE,            /* 18 */
+  CURLE_FTP_COULDNT_RETR_FILE,   /* 19 */
+  CURLE_OBSOLETE20,              /* 20 - NOT USED */
+  CURLE_QUOTE_ERROR,             /* 21 - quote command failure */
+  CURLE_HTTP_RETURNED_ERROR,     /* 22 */
+  CURLE_WRITE_ERROR,             /* 23 */
+  CURLE_OBSOLETE24,              /* 24 - NOT USED */
+  CURLE_UPLOAD_FAILED,           /* 25 - 上传失败 "command" */
+  CURLE_READ_ERROR,              /* 26 - 无法打开/读取 文件*/
+  CURLE_OUT_OF_MEMORY,           /* 27 */
+  /* Note: CURLE_OUT_OF_MEMORY 有时会显示转换错误 
+            而不是内存分配错误，如果 CURL_DOES_CONVERSIONS
+           被定义 
+  */
+  CURLE_OPERATION_TIMEDOUT,      /* 28 - 超时了仍未到达 */
+  CURLE_OBSOLETE29,              /* 29 - NOT USED */
+  CURLE_FTP_PORT_FAILED,         /* 30 - FTP端口操作失败 */
+  CURLE_FTP_COULDNT_USE_REST,    /* 31 - REST命令失败 */
+  CURLE_OBSOLETE32,              /* 32 - NOT USED */
+  CURLE_RANGE_ERROR,             /* 33 - 范围 "command" 没有工作*/
+  CURLE_HTTP_POST_ERROR,         /* 34 */
+  CURLE_SSL_CONNECT_ERROR,       /* 35 - 使用 SSL 链接时发生错误*/
+  CURLE_BAD_DOWNLOAD_RESUME,     /* 36 - 无法恢复下载 */
+  CURLE_FILE_COULDNT_READ_FILE,  /* 37 */
+  CURLE_LDAP_CANNOT_BIND,        /* 38 */
+  CURLE_LDAP_SEARCH_FAILED,      /* 39 */
+  CURLE_OBSOLETE40,              /* 40 - NOT USED */
+  CURLE_FUNCTION_NOT_FOUND,      /* 41 */
+  CURLE_ABORTED_BY_CALLBACK,     /* 42 */
+  CURLE_BAD_FUNCTION_ARGUMENT,   /* 43 */
+  CURLE_OBSOLETE44,              /* 44 - NOT USED */
+  CURLE_INTERFACE_FAILED,        /* 45 - CURLOPT_INTERFACE 的失败 */
+  CURLE_OBSOLETE46,              /* 46 - NOT USED */
+  CURLE_TOO_MANY_REDIRECTS ,     /* 47 - 赶上无尽的 re-direct 循环 */
+  CURLE_UNKNOWN_OPTION,          /* 48 - 用户指定了一个未知的选项 */
+  CURLE_TELNET_OPTION_SYNTAX ,   /* 49 - 格式不正确的telnet选项 */
+  CURLE_OBSOLETE50,              /* 50 - NOT USED */
+  CURLE_PEER_FAILED_VERIFICATION, /* 51 - 对方的证书或指纹 
+                                     没有验证好 */
+  CURLE_GOT_NOTHING,             /* 52 - 这是一个特定的错误 */
+  CURLE_SSL_ENGINE_NOTFOUND，      /* 53 - SSL加密引擎没有找到*/
+  CURLE_SSL_ENGINE_SETFAILED，     /* 54 -可以不设置SSL加密引擎
+    默认值*/
+  CURLE_SEND_ERROR，               /* 55 -无法发送网络数据*/
+  CURLE_RECV_ERROR，               /* 56 -未能接收网络数据*/
+  CURLE_OBSOLETE57,              /* 57 - NOT IN USE */
+  CURLE_SSL_CERTPROBLEM,         /* 58 - 本地凭证有问题 */
+  CURLE_SSL_CIPHER,              /* 59 - 指定的密码无法使用 */
+  CURLE_SSL_CACERT,              /* 60 - CA证书（路径）有问题 */
+  CURLE_BAD_CONTENT_ENCODING,    /* 61 - 无法识别的编码/坏 */
+  CURLE_LDAP_INVALID_URL,        /* 62 - 无效的LDAP URL  */
+  CURLE_FILESIZE_EXCEEDED,       /* 63 - 超出最大文件大小 */
+  CURLE_USE_SSL_FAILED,          /* 64 - 请求FTP SSL级别失败 */
+  CURLE_SEND_FAIL_REWIND,        /* 65 - 需要重新发送数据 
+                                    失败 */
+  CURLE_SSL_ENGINE_INITFAILED,   /* 66 - 初始化 ENGINE 失败 */
+    CURLE_LOGIN_DENIED,            /* 67 - 用户名，密码或类似的不
+                                    接受我们登录失败*/
+  CURLE_TFTP_NOTFOUND,           /* 68 - 文件未在服务器上找到 */
+  CURLE_TFTP_PERM,               /* 69 - 服务器上的权限问题 */
+  CURLE_REMOTE_DISK_FULL,        /* 70 - 服务器上的磁盘空间不足 */
+  CURLE_TFTP_ILLEGAL,            /* 71 - 非法的TFTP操作 */
+  CURLE_TFTP_UNKNOWNID,          /* 72 - 未知的传输ID */
+  CURLE_REMOTE_FILE_EXISTS,      /* 73 - 文件已经存在 */
+  CURLE_TFTP_NOSUCHUSER,         /* 74 - 没有这样的用户*/
+  CURLE_CONV_FAILED,             /* 75 - 转换失败 */
+  CURLE_CONV_REQD,               /* 76 - 调用者必须注册转换
+                                     使用curl_easy_setopt回调选项
+                                    CURLOPT_CONV_FROM_NETWORK_FUNCTION,
+                                    CURLOPT_CONV_TO_NETWORK_FUNCTION, and
+                                    CURLOPT_CONV_FROM_UTF8_FUNCTION */
+  CURLE_SSL_CACERT_BADFILE,      /* 77 - 无法加载CACERT文件，缺少
+                                    或格式错误 */
+  CURLE_REMOTE_FILE_NOT_FOUND,   /* 78 - 远程文件没有找到 */
+  CURLE_SSH,                     /* 79 - SSH layer 的错误, 有点常用
+                                    所以当错误发生时错误会显示出来
+                                 */
+
+  CURLE_SSL_SHUTDOWN_FAILED,     /* 80 - 无法关闭SSL连接 */
+    CURLE_AGAIN,                   /* 81 - socket 还没有准备好发送/接收，
+                                    等到它已经准备好，然后再试一次*/
+    CURLE_SSL_CRL_BADFILE,         /* 82 - 无法加载CRL文件，丢失或
+                                    格式错误（在7.19.0版加入） */
+    CURLE_SSL_ISSUER_ERROR,        /* 83 - 发行人检查失败。（由
+                                    7.19.0版） */
+  CURLE_FTP_PRET_FAILED,         /* 84 - 一个PRET命令的失败 */
+  CURLE_RTSP_CSEQ_ERROR,         /* 85 - RTSP的Cseq号码不匹配 */
+  CURLE_RTSP_SESSION_ERROR,      /* 86 - RTSP会话ID不匹配 */
+  CURLE_FTP_BAD_FILE_LIST,       /* 87 - 无法解析FTP文件列表 */
+  CURLE_CHUNK_FAILED,            /* 88 - 块回调报告错误 */
+  CURL_LAST /* never use! */
+} CURLcode;
+
+#ifndef CURL_NO_OLDIES /* 定义这个测试，如果你的应用程序建立的所有过时的东西都会被删掉！ */
+
+/* 重新使用以前废弃的错误代码7.24.0 */
+#define CURLE_OBSOLETE10 CURLE_FTP_ACCEPT_FAILED
+#define CURLE_OBSOLETE12 CURLE_FTP_ACCEPT_TIMEOUT
+
+/*  兼容性与旧版本的名称 */
+#define CURLOPT_ENCODING CURLOPT_ACCEPT_ENCODING
+
+/* 以下，2011年4月加入7.21.5 */
+#define CURLE_UNKNOWN_TELNET_OPTION CURLE_UNKNOWN_OPTION
+
+/* 以下分别加入7.17.1 */
+/* 这些定于2009年消失*/
+#define CURLE_SSL_PEER_CERTIFICATE CURLE_PEER_FAILED_VERIFICATION
+
+    /* 以下分别加入7.17.1 */
+    /* 这些定于2009年消失*/
+#define CURLE_OBSOLETE CURLE_OBSOLETE50 /* 任何人都不应该用这个! */
+#define CURLE_BAD_PASSWORD_ENTERED CURLE_OBSOLETE46
+#define CURLE_BAD_CALLING_ORDER CURLE_OBSOLETE44
+#define CURLE_FTP_USER_PASSWORD_INCORRECT CURLE_OBSOLETE10
+#define CURLE_FTP_CANT_RECONNECT CURLE_OBSOLETE16
+#define CURLE_FTP_COULDNT_GET_SIZE CURLE_OBSOLETE32
+#define CURLE_FTP_COULDNT_SET_ASCII CURLE_OBSOLETE29
+#define CURLE_FTP_WEIRD_USER_REPLY CURLE_OBSOLETE12
+#define CURLE_FTP_WRITE_ERROR CURLE_OBSOLETE20
+#define CURLE_LIBRARY_NOT_FOUND CURLE_OBSOLETE40
+#define CURLE_MALFORMAT_USER CURLE_OBSOLETE24
+#define CURLE_SHARE_IN_USE CURLE_OBSOLETE57
+#define CURLE_URL_MALFORMAT_USER CURLE_NOT_BUILT_IN
+
+#define CURLE_FTP_ACCESS_DENIED CURLE_REMOTE_ACCESS_DENIED
+#define CURLE_FTP_COULDNT_SET_BINARY CURLE_FTP_COULDNT_SET_TYPE
+#define CURLE_FTP_QUOTE_ERROR CURLE_QUOTE_ERROR
+#define CURLE_TFTP_DISKFULL CURLE_REMOTE_DISK_FULL
+#define CURLE_TFTP_EXISTS CURLE_REMOTE_FILE_EXISTS
+#define CURLE_HTTP_RANGE_ERROR CURLE_RANGE_ERROR
+#define CURLE_FTP_SSL_FAILED CURLE_USE_SSL_FAILED
+
+/* 以下早就添加了 */
+
+#define CURLE_OPERATION_TIMEOUTED CURLE_OPERATION_TIMEDOUT
+
+#define CURLE_HTTP_NOT_FOUND CURLE_HTTP_RETURNED_ERROR
+#define CURLE_HTTP_PORT_FAILED CURLE_INTERFACE_FAILED
+#define CURLE_FTP_COULDNT_STOR_FILE CURLE_UPLOAD_FAILED
+
+#define CURLE_FTP_PARTIAL_FILE CURLE_PARTIAL_FILE
+#define CURLE_FTP_BAD_DOWNLOAD_RESUME CURLE_BAD_DOWNLOAD_RESUME
+
+    /* 这是错误代码50 7.7.3和一些早期版本,这
+     些 libcurl 不再使用，这里定义只是不是应用程序崩溃的替代 */
+#define CURLE_ALREADY_COMPLETE 99999
+
+#endif /*!CURL_NO_OLDIES*/
+
+/* 这个原型适用于所有的转换回调 */
+typedef CURLcode (*curl_conv_callback)(char *buffer, size_t length);
+
+typedef CURLcode (*curl_ssl_ctx_callback)(CURL *curl,    /* easy 手柄 */
+                                          void *ssl_ctx, /* 实际上是一个
+                                                            OpenSSL SSL_CTX */
+                                          void *userptr);
+
+typedef enum {
+  CURLPROXY_HTTP = 0,   /*7.10增加，新的7.19.4默认是使用
+                           CONNECT HTTP/1.1 */
+  CURLPROXY_HTTP_1_0 = 1,   /* 7.19.4增加，强制使用CONNECT 
+                               HTTP/1.0  */
+  CURLPROXY_SOCKS4 = 4, /* 7.15.2增加支持，枚举在 7.10 已经存在
+                        */
+  CURLPROXY_SOCKS5 = 5, /* added in 7.10 */
+  CURLPROXY_SOCKS4A = 6, /* added in 7.18.0 */
+    CURLPROXY_SOCKS5_HOSTNAME = 7 /* 使用SOCKS5协议，但传递的时
+                                   主机名而非IP地址。added                                   
+                                   in 7.18.0 */
+} curl_proxytype;  /* 该枚举 added in 7.10 */
+
+/*
+ *  CURLOPT_HTTPAUTH 、 CURLOPT_PROXYAUTH Bitmasks（位掩码）选项:
+ *
+ * CURLAUTH_NONE         - 没有HTTP认证
+ * CURLAUTH_BASIC        - HTTP基本身份验证（默认）
+ * CURLAUTH_DIGEST       - HTTP Digest认证 
+ * CURLAUTH_GSSNEGOTIATE - HTTP GSS-协商认证
+ * CURLAUTH_NTLM         - HTTP NTLM身份验证 
+ * CURLAUTH_DIGEST_IE    - HTTP摘要身份验证使用IE风味
+ * CURLAUTH_NTLM_WB      - HTTP winbind的助手委派 （NTLM身份验证）
+ * CURLAUTH_ONLY         - 一起使用和一个单一的其他的强制不认证类型或只是单一类型
+ * CURLAUTH_ANY          - 所有精细类型
+ * CURLAUTH_ANYSAFE      - 所有精细除了基本类型
+ */
+
+#define CURLAUTH_NONE         ((unsigned long)0)
+#define CURLAUTH_BASIC        (((unsigned long)1)<<0)
+#define CURLAUTH_DIGEST       (((unsigned long)1)<<1)
+#define CURLAUTH_GSSNEGOTIATE (((unsigned long)1)<<2)
+#define CURLAUTH_NTLM         (((unsigned long)1)<<3)
+#define CURLAUTH_DIGEST_IE    (((unsigned long)1)<<4)
+#define CURLAUTH_NTLM_WB      (((unsigned long)1)<<5)
+#define CURLAUTH_ONLY         (((unsigned long)1)<<31)
+#define CURLAUTH_ANY          (~CURLAUTH_DIGEST_IE)
+#define CURLAUTH_ANYSAFE      (~(CURLAUTH_BASIC|CURLAUTH_DIGEST_IE))
+
+#define CURLSSH_AUTH_ANY       ~0     /* 服务器所支持的所有类型 */
+#define CURLSSH_AUTH_NONE      0      /* 没有允许的，愚蠢的，但完整的 */
+#define CURLSSH_AUTH_PUBLICKEY (1<<0) /* （public/private ）公钥/私钥文件 */
+#define CURLSSH_AUTH_PASSWORD  (1<<1) /* 密码 */
+#define CURLSSH_AUTH_HOST      (1<<2) /* 主机密钥文件 */
+#define CURLSSH_AUTH_KEYBOARD  (1<<3) /* 键盘互动 */
+#define CURLSSH_AUTH_DEFAULT CURLSSH_AUTH_ANY
+
+#define CURLGSSAPI_DELEGATION_NONE        0      /* 没有代理（默认） */
+#define CURLGSSAPI_DELEGATION_POLICY_FLAG (1<<0) /* 如果政策允许 */
+#define CURLGSSAPI_DELEGATION_FLAG        (1<<1) /* 总是委托 */
+
+#define CURL_ERROR_SIZE 256
+
+struct curl_khkey {
+    const char *key; /* 指向以零结尾的字符串，以base64编码
+                      如果len为0, otherwise 指向 "raw"（原始） 数据 */
+  size_t len;
+  enum type {
+    CURLKHTYPE_UNKNOWN,
+    CURLKHTYPE_RSA1,
+    CURLKHTYPE_RSA,
+    CURLKHTYPE_DSS
+  } keytype;
+};
+
+    /* 这是一套 从 curl_sshkeycallback callback的返回值预期 */
+enum curl_khstat {
+  CURLKHSTAT_FINE_ADD_TO_FILE,
+  CURLKHSTAT_FINE,
+  CURLKHSTAT_REJECT, /* 拒绝连接，返回一个错误 */
+  CURLKHSTAT_DEFER,  /* 不接受，也不正确回答d
+                        这会导致一个CURLE_DEFER错误，但在其他方面
+                        连接将被完整保留等 */
+  CURLKHSTAT_LAST    /* 不使用，只有在名单最后标记 */
+};
+
+/* 这是一套传递给回调的状态代码 */
+enum curl_khmatch {
+  CURLKHMATCH_OK,       /* 匹配 */
+  CURLKHMATCH_MISMATCH, /* 主机发现，关键字不匹配! */
+  CURLKHMATCH_MISSING,  /* 找不到匹配的 host/key  */
+  CURLKHMATCH_LAST      /* 不使用，只有在名单最后标记 */
+};
+
+typedef int
+  (*curl_sshkeycallback) (CURL *easy,     /* easy handle */
+                          const struct curl_khkey *knownkey, /* 已知 */
+                          const struct curl_khkey *foundkey, /* 发现 */
+                          enum curl_khmatch, /* libcurl's 视图上的按键 */
+                          void *clientp); /* 应用程序通过的自定义指针 */
+
+/*  CURLOPT_USE_SSL 参数选项 */
+typedef enum {
+  CURLUSESSL_NONE,    /* 不要尝试使用SSL*/
+  CURLUSESSL_TRY,     /* 尝试使用SSL, 无论如何以其他方式继续进行 */
+  CURLUSESSL_CONTROL, /* 用于控制SSL连接或失败 */
+  CURLUSESSL_ALL,     /* 所有 SSL 通信或失败 */
+  CURLUSESSL_LAST     /* 不是一种选择，从来没有使用 */
+} curl_usessl;
+
+/* 为 CURLOPT_SSL_OPTIONS 定义 bits 参数: */
+
+/* - ALLOW_BEAST告知libcurl允许BEAST SSL中的漏洞
+   提高与旧的服务器名称的互操作性。一些SSL库 
+ 应对这些缺陷的变通办法，但是有些变通使 SSL通信失败
+  要使用旧服务器的这些功能，用户可以通过这种方式允许漏洞
+ */
+#define CURLSSLOPT_ALLOW_BEAST (1<<0)
+
+#ifndef CURL_NO_OLDIES /* 定义这个测试，如果你的应用程序建立的所有过时的东西都会被删掉! */
+
+/* 向后兼容旧名 */
+/* 这是定于2009年消失 */
+
+#define CURLFTPSSL_NONE CURLUSESSL_NONE
+#define CURLFTPSSL_TRY CURLUSESSL_TRY
+#define CURLFTPSSL_CONTROL CURLUSESSL_CONTROL
+#define CURLFTPSSL_ALL CURLUSESSL_ALL
+#define CURLFTPSSL_LAST CURLUSESSL_LAST
+#define curl_ftpssl curl_usessl
+#endif /*!CURL_NO_OLDIES*/
+
+/* CURLOPT_FTP_SSL_CCC 参数选项 */
+typedef enum {
+  CURLFTPSSL_CCC_NONE,    /* 不发送 CCC */
+  CURLFTPSSL_CCC_PASSIVE, /* 让服务器开始关机 */
+  CURLFTPSSL_CCC_ACTIVE,  /* 开始关机（主动） */
+  CURLFTPSSL_CCC_LAST     /* 不是一种选择，从来没有使用 */
+} curl_ftpccc;
+
+/*  CURLOPT_FTPSSLAUTH 参数选项 */
+typedef enum {
+  CURLFTPAUTH_DEFAULT, /* 让libcurl的决定 */
+  CURLFTPAUTH_SSL,     /* use "AUTH SSL" */
+  CURLFTPAUTH_TLS,     /* use "AUTH TLS" */
+  CURLFTPAUTH_LAST /* 不是一种选择，从来没有使用 */
+} curl_ftpauth;
+
+/*  CURLOPT_FTP_CREATE_MISSING_DIRS 参数选项 */
+typedef enum {
+  CURLFTP_CREATE_DIR_NONE,  /* 不创建丢失的 dirs! */
+  CURLFTP_CREATE_DIR,       /* (FTP/SFTP) 如果 CWD 失败, 尝试 MKD然后再次尝试 CWD
+                               如果这次 MKD 成功,  SFTP 失败时也这样做
+                             */
+    CURLFTP_CREATE_DIR_RETRY, /* (FTP only) 如果 CWD 失败, 尝试 MKD然后再次尝试 CWD
+                               如果这次 MKD 失败! */
+  CURLFTP_CREATE_DIR_LAST   /* 不是一种选择，从来没有使用 */
+} curl_ftpcreatedir;
+
+/*  CURLOPT_FTP_FILEMETHOD 参数选项 */
+typedef enum {
+  CURLFTPMETHOD_DEFAULT,   /* 让 libcurl 选择 */
+  CURLFTPMETHOD_MULTICWD,  /* 每个部分的路径都是单一的 CWD 操作*/
+  CURLFTPMETHOD_NOCWD,     /* 都没下有一个 CWD ，然后在那上面工作  */
+  CURLFTPMETHOD_SINGLECWD, /* 目录没有 CMD 文件 */
+  CURLFTPMETHOD_LAST       /* 不是一种选择，从来没有使用 */
+} curl_ftpmethod;
+
+/* CURLPROTO_ 为 CURLOPT_*PROTOCOLS 定义的选项 */
+#define CURLPROTO_HTTP   (1<<0)
+#define CURLPROTO_HTTPS  (1<<1)
+#define CURLPROTO_FTP    (1<<2)
+#define CURLPROTO_FTPS   (1<<3)
+#define CURLPROTO_SCP    (1<<4)
+#define CURLPROTO_SFTP   (1<<5)
+#define CURLPROTO_TELNET (1<<6)
+#define CURLPROTO_LDAP   (1<<7)
+#define CURLPROTO_LDAPS  (1<<8)
+#define CURLPROTO_DICT   (1<<9)
+#define CURLPROTO_FILE   (1<<10)
+#define CURLPROTO_TFTP   (1<<11)
+#define CURLPROTO_IMAP   (1<<12)
+#define CURLPROTO_IMAPS  (1<<13)
+#define CURLPROTO_POP3   (1<<14)
+#define CURLPROTO_POP3S  (1<<15)
+#define CURLPROTO_SMTP   (1<<16)
+#define CURLPROTO_SMTPS  (1<<17)
+#define CURLPROTO_RTSP   (1<<18)
+#define CURLPROTO_RTMP   (1<<19)
+#define CURLPROTO_RTMPT  (1<<20)
+#define CURLPROTO_RTMPE  (1<<21)
+#define CURLPROTO_RTMPTE (1<<22)
+#define CURLPROTO_RTMPS  (1<<23)
+#define CURLPROTO_RTMPTS (1<<24)
+#define CURLPROTO_GOPHER (1<<25)
+#define CURLPROTO_ALL    (~0) /* 一切都启用*/
+
+/* 长可能是32或64位，但我们决不应该依靠其他任何但是一定要有32位 */
+#define CURLOPTTYPE_LONG          0
+#define CURLOPTTYPE_OBJECTPOINT   10000
+#define CURLOPTTYPE_FUNCTIONPOINT 20000
+#define CURLOPTTYPE_OFF_T         30000
+
+/* 名字是大写的 CURLOPT_<name>,
+   type 是 CURLOPTTYPE_<type> 里面定义的一种
+   号码是唯一的标识符 */
+#ifdef CINIT
+#undef CINIT
+#endif
+
+#ifdef CURL_ISOCPP
+#define CINIT(na,t,nu) CURLOPT_ ## na = CURLOPTTYPE_ ## t + nu
+#else
+/* 宏 "##"  在 ISO C 中定义, 我们假设 pre-ISO C 不支持他. */
+#define LONG          CURLOPTTYPE_LONG
+#define OBJECTPOINT   CURLOPTTYPE_OBJECTPOINT
+#define FUNCTIONPOINT CURLOPTTYPE_FUNCTIONPOINT
+#define OFF_T         CURLOPTTYPE_OFF_T
+#define CINIT(name,type,number) CURLOPT_/**/name = type + number
+#endif
+
+/*
+ * 这个 macro-mania 设置以下的 CURLOPT_[what] 枚举,
+ *在 curl_easy_setopt() 里面使用.  CINIT() 宏的第一个参数是 [what]
+ * 单词.
+ */
+
+typedef enum {
+  /* 这是 FILE * or void * 正常输出应该被写入. */
+  CINIT(FILE, OBJECTPOINT, 1),
+
+  /* 完整的URL get/put */
+  CINIT(URL,  OBJECTPOINT, 2),
+
+  /* 连接的端口号, 其它的端口号比默认的好. */
+  CINIT(PORT, LONG, 3),
+
+  /* 使用的代理名称. */
+  CINIT(PROXY, OBJECTPOINT, 4),
+
+  /* "name:password" 使用他获取数据. */
+  CINIT(USERPWD, OBJECTPOINT, 5),
+
+  /* 代理使用的 "name:password" . */
+  CINIT(PROXYUSERPWD, OBJECTPOINT, 6),
+
+  /* 得到的范围,指定为一个ASCII字符串. */
+  CINIT(RANGE, OBJECTPOINT, 7),
+
+  /* not used */
+
+  /* 指定的文件上传流（用作输入）: */
+  CINIT(INFILE, OBJECTPOINT, 9),
+
+  /* 缓冲区中收到错误消息，必须至少 CURL_ERROR_SIZE 的 byte大小
+   *如果现在不使用,错误信息使用stderr 代替: */
+  CINIT(ERRORBUFFER, OBJECTPOINT, 10),
+
+  /* 这个函数将被用来存储输出 (而不是fwrite的). 
+   * 该参数将使用 fwrite() 语法，请一定要按照他们. */
+  CINIT(WRITEFUNCTION, FUNCTIONPOINT, 11),
+
+  /* 函数将被调用来读取输入（而不是 fread). The
+   *  该参数将使用 fread() 语法，请一定要按照他们. */
+  CINIT(READFUNCTION, FUNCTIONPOINT, 12),
+
+  /* 如果读取操作超过了这个时间就是读去超时*/
+  CINIT(TIMEOUT, LONG, 13),
+
+  /* 如果使用CURLOPT_INFILE，这可以用来通知libcurl的
+   *正在发送的文件真是大小. 这允许更好的错误
+   *检查和更好的验证，上传成功。-1表示
+   *大小未知。 
+   *
+   * 对于大文件支持，也有一个_LARGE的版本
+   * 关键这需要是 off_t 的长度,允许平台使用超过 off_t 的长度来处理更大的文件
+   * 见下文 INFILESIZE_LARGE.
+   */
+  CINIT(INFILESIZE, LONG, 14),
+
+  /* POST静态输入字段. */
+  CINIT(POSTFIELDS, OBJECTPOINT, 15),
+
+  /* 设置一些CGI程序需要的引用页*/
+  CINIT(REFERER, OBJECTPOINT, 16),
+
+  /*设置的的FTP PORT字符串 (接口名称、IP地址)
+     使用 i.e 时'-' 使用的默认地址. */
+  CINIT(FTPPORT, OBJECTPOINT, 17),
+
+  /* 设置User-Agent字符串（一些CGI程序检查） */
+  CINIT(USERAGENT, OBJECTPOINT, 18),
+
+  /* 如果下载速度低于 "low speed limit" bytes/second
+   * 在 "low speed time" 秒, 操作会中止.
+   * 如果你有一个相当高的速度连接，
+   * 如果中止必须在20秒内，速度小于2000 bytes/second。
+   */
+
+  /* Set the "low speed limit" */
+  CINIT(LOW_SPEED_LIMIT, LONG, 19),
+
+  /* Set the "low speed time" */
+  CINIT(LOW_SPEED_TIME, LONG, 20),
+
+  /* 设置继续偏移.
+   *
+   * Note 这里也有一个_LARGE的版本
+   * 关键这需要是 off_t 的长度, 允许不是 32 位的平台使用大文件偏移
+   *  看下面RESUME_FROM_LARGE.
+   */
+  CINIT(RESUME_FROM, LONG, 21),
+
+  /* 设置cookie请求: */
+  CINIT(COOKIE, OBJECTPOINT, 22),
+
+  /* 指向一个链表头, struct curl_slist 是其中一种 */
+  CINIT(HTTPHEADER, OBJECTPOINT, 23),
+
+  /* 指向连标条目, struct curl_httppost */
+  CINIT(HTTPPOST, OBJECTPOINT, 24),
+
+  /* 保持你的私有 SSL-certificate（证书）名 */
+  CINIT(SSLCERT, OBJECTPOINT, 25),
+
+  /* SSL或SSH私钥密码*/
+  CINIT(KEYPASSWD, OBJECTPOINT, 26),
+
+  /* 发送参数类型? */
+  CINIT(CRLF, LONG, 27),
+
+  /* 发送链表的 QUOTE（索引） 命令 */
+  CINIT(QUOTE, OBJECTPOINT, 28),
+
+  /* 发送 FILE * or void * 存储标题，如果你使用一个回调 
+     简单的传递未修改的回调*/
+  CINIT(WRITEHEADER, OBJECTPOINT, 29),
+
+  /* 指向到一个文件中读取初始的cookie
+     也可以启用"cookie awareness" */
+  CINIT(COOKIEFILE, OBJECTPOINT, 31),
+
+  /* 什么版本专门原来尝试
+     看看下面 CURL_SSLVERSION 的定义. */
+  CINIT(SSLVERSION, LONG, 32),
+
+  /* 使用什么样的HTTP时间条件，请参阅定义 */
+  CINIT(TIMECONDITION, LONG, 33),
+
+    /* 使用上述条件的时间。指定秒数
+     从1970年1月1日 开始*/
+  CINIT(TIMEVALUE, LONG, 34),
+
+  /* 35 = OBSOLETE */// 作废
+
+  /* 自定义的请求，定制get命令，如
+     HTTP: DELETE, TRACE（跟踪） and others
+     FTP: 使用不同的list命令
+     */
+  CINIT(CUSTOMREQUEST, OBJECTPOINT, 36),
+
+  /* HTTP请求，删除，跟踪和其他奇怪的命令 */
+  CINIT(STDERR, OBJECTPOINT, 37),
+
+  /* 38 is not used */
+
+  /* 发送 post-transfer 的 linked-list 查询命令 */
+  CINIT(POSTQUOTE, OBJECTPOINT, 39),
+
+  CINIT(WRITEINFO, OBJECTPOINT, 40), /* 不推荐使用，不使用! */
+
+  CINIT(VERBOSE, LONG, 41),      /* 谈了很多 */
+  CINIT(HEADER, LONG, 42),       /* 扔头的太多 */
+  CINIT(NOPROGRESS, LONG, 43),   /* 关闭进度表 */
+  CINIT(NOBODY, LONG, 44),       /* 使用HTTP头文件 */
+  CINIT(FAILONERROR, LONG, 45),  /* 无输出HTTP错误 codes >= 300 */
+  CINIT(UPLOAD, LONG, 46),       /* 这是一个上传 */
+  CINIT(POST, LONG, 47),         /* HTTP POST 方法 */
+  CINIT(DIRLISTONLY, LONG, 48),  /* 只显示列表目录的名字 */
+
+  CINIT(APPEND, LONG, 50),       /* 追加而不是覆盖上载! */
+
+  /* 指定是否使用 user+password 读取 .netrc or the URL.
+   * 这必须是下面的CURL_NETRC_ *枚举之一. */
+  CINIT(NETRC, LONG, 51),
+
+  CINIT(FOLLOWLOCATION, LONG, 52),  /* 使用地点: Luke! */
+
+  CINIT(TRANSFERTEXT, LONG, 53), /* 传输数据 text/ASCII 格式 */
+  CINIT(PUT, LONG, 54),          /* HTTP PUT */
+
+  /* 55 = OBSOLETE */// 作废
+
+  /* 调用函数，替代内部的进度显示功能 
+   * 此功能应该被定义为 curl_progress_callback 定义的原型
+  */
+  CINIT(PROGRESSFUNCTION, FUNCTIONPOINT, 56),
+
+  /* 数据传递给进度回调* */
+  CINIT(PROGRESSDATA, OBJECTPOINT, 57),
+
+  /* 我们希望引用字段时自动设置以下位置 */
+  CINIT(AUTOREFERER, LONG, 58),
+
+  /*端口的代理，可以设置代理字符串:
+     "[host]:[port]" */
+  CINIT(PROXYPORT, LONG, 59),
+
+  /* POST输入数据的大小, 如果 strlen() 函数不是很好用可以使用这个函数 */
+  CINIT(POSTFIELDSIZE, LONG, 60),
+
+  /* 通过 HTTP 代理操作 non-http通道*/
+  CINIT(HTTPPROXYTUNNEL, LONG, 61),
+
+  /* 设置接口字符串用作 outgoing 网络接口 */
+  CINIT(INTERFACE, OBJECTPOINT, 62),
+
+  /* 设置 krb4/5 安全水平, 这也启用了 krb4/5 awareness（意识）.  
+   * 这是一个 'clear', 'safe', 'confidential' or 'private' 字符串. 
+   * 如果字符串设置了且没有匹配这些字符串, 那么将使用 'private'.  */
+  CINIT(KRBLEVEL, OBJECTPOINT, 63),
+
+  /* 设置在 SSL 握手时是否验证对方，1代表验证 */
+  CINIT(SSL_VERIFYPEER, LONG, 64),
+
+  /* 当 SSL_VERIFYPEER  是 true时，  CApath or CAfile 用来验证同级证书*/
+  CINIT(CAINFO, OBJECTPOINT, 65),
+
+  /* 66 = OBSOLETE */// 作废
+  /* 67 = OBSOLETE */// 作废
+
+  /* HTTP重定向的最大数量 */
+  CINIT(MAXREDIRS, LONG, 68),
+
+    /* 通过长设置为1以获取所请求的文档的日期（如果
+     可能的话）！通过一个零，把它关掉. */
+  CINIT(FILETIME, LONG, 69),
+
+  /* 指向一个链表的telnet选项 */
+  CINIT(TELNETOPTIONS, OBJECTPOINT, 70),
+
+  /*最大数量的 alive 的缓存链接 */
+  CINIT(MAXCONNECTS, LONG, 71),
+
+  CINIT(CLOSEPOLICY, LONG, 72), /* 不推荐使用，不使用! */
+
+  /* 73 = OBSOLETE */// 作废
+
+  /* 使用一个新的链接设置为即将到来的传递
+   不要使用这个，除非你知道这一点，因为它使
+   操作速度较慢，不太友好的网络。 */
+  CINIT(FRESH_CONNECT, LONG, 74),
+
+  /* 使用 re-used 禁止即将传递过来的连接
+   不要使用这个，除非你知道这一点，因为它使
+   操作速度较慢，不太友好的网络。  */
+  CINIT(FORBID_REUSE, LONG, 75),
+
+    /* 为libcurl的使用随机引擎，做SSL连接 设置一个包含随机数据的文件名. */
+  CINIT(RANDOM_FILE, OBJECTPOINT, 76),
+
+  /* Set Entropy Gathering Daemon socket 路径名 */
+  CINIT(EGDSOCKET, OBJECTPOINT, 77),
+
+  /* Time-out 这几秒后, 如果有链接操作这段时间都 OK，然后进入连接中断操作阶段. [只在 unix-style/SIGALRM 上有效] */
+  CINIT(CONNECTTIMEOUT, LONG, 78),
+
+  /* *函数将被调用用于存储头文件（代替fwrite）
+   *  该参数将使用 fwrite() 语法，请一定要按照他们. */
+  CINIT(HEADERFUNCTION, FUNCTIONPOINT, 79),
+
+  /* 强制设置HTTP请求时使用 GET. 只在post 可用时, PUT or 最早自定义请求.
+   */
+  CINIT(HTTPGET, LONG, 80),
+
+  /* 设置 SSL 对等证书握手时我们是否验证通用用户名, set 1 检查是否存在, 2 确保他和提供的主机名匹配. */
+  CINIT(SSL_VERIFYHOST, LONG, 81),
+
+    /*在指定文件名写在完成后的所有已知的 cookies
+     操作.*/
+  CINIT(COOKIEJAR, OBJECTPOINT, 82),
+
+  /* 指定使用SSL密码 */
+  CINIT(SSL_CIPHER_LIST, OBJECTPOINT, 83),
+
+  /* 指定使用的HTTP版本！ 必须设置为
+     CURL_HTTP_VERSION* 的枚举类型之一. */
+  CINIT(HTTP_VERSION, LONG, 84),
+
+  /* 开启或关闭的FTP引擎的使用EPSV命令. 
+     . */
+  CINIT(FTP_USE_EPSV, LONG, 85),
+
+  /* 保持你的SSL证书的文件类型 ("DER", "PEM", "ENG") */
+  CINIT(SSLCERTTYPE, OBJECTPOINT, 86),
+
+  /* 保持你私人的SSL密钥的类型文件名 */
+  CINIT(SSLKEY, OBJECTPOINT, 87),
+
+  /* 保持你私人的SSL密钥的类型文件 ("DER", "PEM", "ENG") */
+  CINIT(SSLKEYTYPE, OBJECTPOINT, 88),
+
+  /* 加密引擎的SSL子系统 */
+  CINIT(SSLENGINE, OBJECTPOINT, 89),
+
+    /* 设置加密引擎作为默认的SSL子系统
+     参数已经没有任何意义
+   */
+  CINIT(SSLENGINE_DEFAULT, LONG, 90),
+
+  /* 非零值表示使用全局DNS缓存 */
+  CINIT(DNS_USE_GLOBAL_CACHE, LONG, 91), /* 不推荐使用，不使用! */
+
+  /* DNS缓存超时 */
+  CINIT(DNS_CACHE_TIMEOUT, LONG, 92),
+
+  /* 链表转移前发送查询命令 */
+  CINIT(PREQUOTE, OBJECTPOINT, 93),
+
+  /* 设置调试功能 */
+  CINIT(DEBUGFUNCTION, FUNCTIONPOINT, 94),
+
+  /* 设置数据调试功能 */
+  CINIT(DEBUGDATA, OBJECTPOINT, 95),
+
+  /* 标记一个cookie会话开始 */
+  CINIT(COOKIESESSION, LONG, 96),
+
+  /* 如果SSL_VERIFYPEER 是 true 使用此选项用来验证CApath目录同级证书 */
+  CINIT(CAPATH, OBJECTPOINT, 97),
+
+  /* 提示 libcurl的使用较小的接收缓冲区 */
+  CINIT(BUFFERSIZE, LONG, 98),
+
+    /* 指示libcurl的不使用任何信号/报警处理,即使使用
+     超时.此选项是有用的多线程应用程序.
+     See libcurl-the-guide 更多的背景信息. */
+  CINIT(NOSIGNAL, LONG, 99),
+
+  /* 提供CURLShare的非-TS数据mutexing */
+  CINIT(SHARE, OBJECTPOINT, 100),
+
+  /* 表示代理类型。可接受的值是CURLPROXY_HTTP（默认),
+     CURLPROXY_SOCKS4, CURLPROXY_SOCKS4A and CURLPROXY_SOCKS5. */
+  CINIT(PROXYTYPE, LONG, 101),
+
+    /* 设置的接受编码字符串。使用这告诉服务器你想
+     响应被压缩。7.21.6之前，这被称为
+     CURLOPT_ENCODING */
+  CINIT(ACCEPT_ENCODING, OBJECTPOINT, 102),
+
+  /* 设置私有数据的指针 */
+  CINIT(PRIVATE, OBJECTPOINT, 103),
+
+  /* 设置别名为??HTTP 200 HTTP响应头 */
+  CINIT(HTTP200ALIASES, OBJECTPOINT, 104),
+
+    /*继续发送认证（用户名+密码）以下位置时，
+     即使更改主机名，这可能会发送名字和密码到服务器决定的主机  */
+  CINIT(UNRESTRICTED_AUTH, LONG, 105),
+
+    /* 具体开启或关闭的FTP引擎，使用的EPRT命令（
+     它也禁用LPRT的的尝试）。默认情况下，将永远
+     尝试传统的PORT命令. */
+  CINIT(FTP_USE_EPRT, LONG, 106),
+
+  /*  设置位掩码值启用特定的认证方法
+   结合 CURLOPT_PROXYUSERPWD 一起使用.
+   Note 设置多个，可能会导致额外的网络往返。 */
+  CINIT(HTTPAUTH, LONG, 107),
+
+    /* 设置SSL上下文的回调函数，目前只针对OpenSSL的SSL_CTX的 第二个参数. 
+     该功能必须匹配 curl_ssl_ctx_callback 源. */
+  CINIT(SSL_CTX_FUNCTION, FUNCTIONPOINT, 108),
+
+    /* SSL上下文回调函数的第三个用户数据 参数*/
+  CINIT(SSL_CTX_DATA, OBJECTPOINT, 109),
+
+  /* 可以导致忘记在远程 FTP 服务器上创建目录
+   In 7.19.4 我们介绍了便利枚举使用此选项的  CURLFTP_CREATE_DIR 前缀.
+  */
+  CINIT(FTP_CREATE_MISSING_DIRS, LONG, 110),
+
+  /* 设置位掩码值启用特定的认证方法 
+     结合 CURLOPT_PROXYUSERPWD 一起使用.
+     Note 设置多个，可能会导致额外的网络往返。. */
+  CINIT(PROXYAUTH, LONG, 111),
+
+    /* 改变 FTP超时时间（秒）, 这是不同的转让超时时间
+     本质上在 FTP 服务器上放置一个及时的需求确认命令。 */
+  CINIT(FTP_RESPONSE_TIMEOUT, LONG, 112),
+#define CURLOPT_SERVER_RESPONSE_TIMEOUT CURLOPT_FTP_RESPONSE_TIMEOUT
+
+  /* 设置 CURL_IPRESOLVE_* 的选项之一，定义见下文
+     告诉libcurl只解析这些IP版本. 这只在支持 IPv4 _and_ IPv6 的系统上有效. */
+  CINIT(IPRESOLVE, LONG, 113),
+
+  /* 设置这个选项来限制你从 http/FTP 服务器上 下载的文件大小.
+
+   注意也有_LARGE版本，增加了大文件的支持
+   off_t的长度尺寸有较大的平台.  See MAXFILESIZE_LARGE below. */
+  CINIT(MAXFILESIZE, LONG, 114),
+
+  /* 看上面的 INFILESIZE 注释, 在短期制定正在上传文件的大小，  -1 意味着未知.
+   */
+  CINIT(INFILESIZE_LARGE, OFF_T, 115),
+
+  /* 设置继续偏移. 这个还有一个较长的版本;
+   * 看上面的 RESUME_FROM.
+   */
+  CINIT(RESUME_FROM_LARGE, OFF_T, 116),
+
+  /* 设置你希望从 http/FTP 服务器上 下载的，最大数据大小  See MAXFILESIZE 以上的版本.
+   */
+  CINIT(MAXFILESIZE_LARGE, OFF_T, 117),
+
+    /* 设置你希望用 libcurl来解析的 .netrc 文件的名字(使用 CURLOPT_NETRC 选项).如果你没有设置， libcurl 会做一个很差的尝试 找到用户的主目录和检查 .netrc 文件在那里 */
+  CINIT(NETRC_FILE, OBJECTPOINT, 118),
+
+  /* 为 FTP 启用 SSL/TLS , 挑选一个:
+     CURLFTPSSL_TRY     -  尝试使用SSL，否则使用任何方式继续
+     CURLFTPSSL_CONTROL - SSL 用于控制连接或失败 
+     CURLFTPSSL_ALL     - SSL的所有通信或失败
+  */
+  CINIT(USE_SSL, LONG, 119),
+
+  /*  标准 POSTFIELDSIZE 版本的 _LARGE 选项 */
+  CINIT(POSTFIELDSIZE_LARGE, OFF_T, 120),
+
+  /* 启用/禁用TCP Nagle算法 */
+  CINIT(TCP_NODELAY, LONG, 121),
+
+  /* 122 OBSOLETE, used in 7.12.3. Gone in 7.13.0 */// 作废
+  /* 123 OBSOLETE. Gone in 7.16.0 */// 作废
+  /* 124 OBSOLETE, used in 7.12.3. Gone in 7.13.0 */// 作废
+  /* 125 OBSOLETE, used in 7.12.3. Gone in 7.13.0 */// 作废
+  /* 126 OBSOLETE, used in 7.12.3. Gone in 7.13.0 */// 作废
+  /* 127 OBSOLETE. Gone in 7.16.0 */// 作废
+  /* 128 OBSOLETE. Gone in 7.16.0 */// 作废
+
+    /* 通过SSL/ TLS的FTP被选中 (with CURLOPT_USE_SSL), 这个选项
+     可以用来改变libcurl 默认情况下首先尝试
+     "AUTH SSL" 然后尝试 "AUTH TLS" , 当返回一个 OK 时代表相应已经收到
+
+     可用的参数是:
+     CURLFTPAUTH_DEFAULT - 让libcurl的决定
+     CURLFTPAUTH_SSL     - try "AUTH SSL" first, then TLS
+     CURLFTPAUTH_TLS     - try "AUTH TLS" first, then SSL
+  */
+  CINIT(FTPSSLAUTH, LONG, 129),
+
+  CINIT(IOCTLFUNCTION, FUNCTIONPOINT, 130),
+  CINIT(IOCTLDATA, OBJECTPOINT, 131),
+
+  /* 132 OBSOLETE. Gone in 7.16.0 */// 作废
+  /* 133 OBSOLETE. Gone in 7.16.0 */// 作废
+
+    /* 当被问及“帐户”信息时，零终止字符串传递到FTP服务器上 */
+  CINIT(FTP_ACCOUNT, OBJECTPOINT, 134),
+
+  /* 在 cookie engine 里面寻找 cookie*/
+  CINIT(COOKIELIST, OBJECTPOINT, 135),
+
+  /* 忽略 Content-Length */
+  CINIT(IGNORE_CONTENT_LENGTH, LONG, 136),
+
+    /* 设置为非零值跳过在227 PASV FTP服务器接收的IP地址响应。通常用于FTP的SSL，但并不限定于
+     这一点。 libcurl 将使用相同的IP地址代替，它用于
+     控制连接*/
+  CINIT(FTP_SKIP_PASV_IP, LONG, 137),
+
+  /* 做 FTP 时用来选择 "file method", see the curl_ftpmethod
+     above. */
+  CINIT(FTP_FILEMETHOD, LONG, 138),
+
+  /* 将套接字绑定的本地端口号 */
+  CINIT(LOCALPORT, LONG, 139),
+
+  /* 端口的尝试, 包括第一组 LOCALPORT.
+     将其设置为1，除了第一次外将不作任何额外的尝试.
+  */
+  CINIT(LOCALPORTRANGE, LONG, 140),
+
+  /* 没有传递, 使用 CURLINFO_LASTSOCKET 提取，设置让应用程序连接的sock */
+  CINIT(CONNECT_ONLY, LONG, 141),
+
+    /* 函数将被调用从网络编码（而不是使用libcurl中的iconv调用 */
+  CINIT(CONV_FROM_NETWORK_FUNCTION, FUNCTIONPOINT, 142),
+
+    /* 函数将被调用转换为
+     网络编码（而不是使用libcurl中的iconv调用 */
+  CINIT(CONV_TO_NETWORK_FUNCTION, FUNCTIONPOINT, 143),
+
+    /* 函数将被调用来从UTF8转换
+     （而不是使用的iconv调用libcurl中）
+     请注意，这仅用于SSL证书的处理*/
+  CINIT(CONV_FROM_UTF8_FUNCTION, FUNCTIONPOINT, 144),
+
+  /* 如果连接进行得很快那么就需要把速度放慢 */
+  /* limit-rate: 每秒字节数为单位的最大数量的发送或接收 */
+  CINIT(MAX_SEND_SPEED_LARGE, OFF_T, 145),
+  CINIT(MAX_RECV_SPEED_LARGE, OFF_T, 146),
+
+  /* 如果用户名/密码发送失败指向命令字符串。 */
+  CINIT(FTP_ALTERNATIVE_TO_USER, OBJECTPOINT, 147),
+
+  /* 回调函数设置套接字选项 */
+  CINIT(SOCKOPTFUNCTION, FUNCTIONPOINT, 148),
+  CINIT(SOCKOPTDATA, OBJECTPOINT, 149),
+
+  /* 设置为0以禁用会话ID，再利用这种传递 , default is
+     enabled (== 1) */
+  CINIT(SSL_SESSIONID_CACHE, LONG, 150),
+
+  /* 允许SSH验证方法 */
+  CINIT(SSH_AUTH_TYPES, LONG, 151),
+
+  /* scp/sftp 使用公钥/私钥认证 */
+  CINIT(SSH_PUBLIC_KEYFILE, OBJECTPOINT, 152),
+  CINIT(SSH_PRIVATE_KEYFILE, OBJECTPOINT, 153),
+
+  /* 认证后发送 CCC (Clear Command Channel)  */          //清理通道命令
+  CINIT(FTP_SSL_CCC, LONG, 154),
+
+  /* 作为 TIMEOUT and CONNECTTIMEOUT, 但是把它们分解为毫秒 */
+  CINIT(TIMEOUT_MS, LONG, 155),
+  CINIT(CONNECTTIMEOUT_MS, LONG, 156),
+
+  /* 设置为0 时禁用 libcurl's 解析 把原始数据传递到应用程序即使他是 encoded/compressed */
+  CINIT(HTTP_TRANSFER_DECODING, LONG, 157),
+  CINIT(HTTP_CONTENT_DECODING, LONG, 158),
+
+  /* 远程在服务器上创建 文件／文件夹 的权限，支持他的协议有 SFTP/SCP/FILE */
+  CINIT(NEW_FILE_PERMS, LONG, 159),
+  CINIT(NEW_DIRECTORY_PERMS, LONG, 160),
+
+  /* 设置POST的重定向时的行为. 必须设置下面 CURL_REDIR* 定义的一个值. 这曾被称为 CURLOPT_POST301 */
+  CINIT(POSTREDIR, LONG, 161),
+
+  /* 使用 scp/sftp 来验证主机的公匙 */
+  CINIT(SSH_HOST_PUBLIC_KEY_MD5, OBJECTPOINT, 162),
+
+  /*回调函数用于打开 socket (代替 socket(2)). 可选,
+       回调是能够改变地址或拒绝连接返回
+     CURL_SOCKET_BAD.  回调的类型应该是 
+     curl_opensocket_callback */
+  CINIT(OPENSOCKETFUNCTION, FUNCTIONPOINT, 163),
+  CINIT(OPENSOCKETDATA, OBJECTPOINT, 164),
+
+  /* POST波动的输入字段。 */
+  CINIT(COPYPOSTFIELDS, OBJECTPOINT, 165),
+
+  /* s设置传输模式 (;type=<a|i>) 做FTP通过HTTP代理 */
+  CINIT(PROXY_TRANSFER_MODE, LONG, 166),
+
+  /* 寻求输入流中的回调函数* */
+  CINIT(SEEKFUNCTION, FUNCTIONPOINT, 167),
+  CINIT(SEEKDATA, OBJECTPOINT, 168),
+
+  /* CRL file */
+  CINIT(CRLFILE, OBJECTPOINT, 169),
+
+  /* 发行证书 */
+  CINIT(ISSUERCERT, OBJECTPOINT, 170),
+
+  /* (IPv6) 的地址范围 */
+  CINIT(ADDRESS_SCOPE, LONG, 171),
+
+  /* 收藏证书链信息后，并允许它使用 CURLINFO_CERTINFO 检索跳转. 可惜只在使用 OpenSSL-powered builds时有效. */
+  CINIT(CERTINFO, LONG, 172),
+
+  /* 使用时取的 "name" and "pwd" . */
+  CINIT(USERNAME, OBJECTPOINT, 173),
+  CINIT(PASSWORD, OBJECTPOINT, 174),
+
+    /* 使用代理时取的 "name" and "pwd" . */
+  CINIT(PROXYUSERNAME, OBJECTPOINT, 175),
+  CINIT(PROXYPASSWORD, OBJECTPOINT, 176),
+
+  /* 逗号分割的定义无代理区的主机名列表。这些都应该和在域名内的两个主机名匹配 local.com 将匹配到 local.com and www.local.com, 但不能匹配到 notlocal.com or www.notlocal.com. 这一点是为了与其他实现兼容, .local.com 将被认为和 local.com 相同. 一个单一的*是唯一有效的通配符，禁止使用代理也是有效的. */
+  CINIT(NOPROXY, OBJECTPOINT, 177),
+
+  /* TFTP传输块大小 */
+  CINIT(TFTP_BLKSIZE, LONG, 178),
+
+  /* Socks Service */
+  CINIT(SOCKS5_GSSAPI_SERVICE, OBJECTPOINT, 179),
+
+  /* Socks Service */
+  CINIT(SOCKS5_GSSAPI_NEC, LONG, 180),
+
+    /* 协议被允许用于设置位掩码转移，从而帮助应用程序，使用者获取 urls 或其它限制外部输入的协议来处理
+     urls . Defaults to CURLPROTO_ALL. */
+  CINIT(PROTOCOLS, LONG, 181),
+
+  /* 设置libcurl的协议，被允许跟随的 bitmask（位掩码）
+     作为 CURLOPT_PROTOCOLS 的一个字集. 这意味着协议需要设置两个可以被重定向到的  bitmasks （位掩码）. 默认除了 FILE 、 SCP 的所有协议. */
+  CINIT(REDIR_PROTOCOLS, LONG, 182),
+
+  /* 设置 SSH knownhost 使用的文件名 */
+  CINIT(SSH_KNOWNHOSTS, OBJECTPOINT, 183),
+
+  /* 设置SSH主机密钥回调，必须指向一个 curl_sshkeycallback
+     函数 */
+  CINIT(SSH_KEYFUNCTION, FUNCTIONPOINT, 184),
+
+  /* 设置SSH主机密钥回调的自定义指针 */
+  CINIT(SSH_KEYDATA, OBJECTPOINT, 185),
+
+  /* 设置SMTP邮件发件人 */
+  CINIT(MAIL_FROM, OBJECTPOINT, 186),
+
+  /* 设置SMTP邮件 receiver(s) */
+  CINIT(MAIL_RCPT, OBJECTPOINT, 187),
+
+  /* FTP: 在 PASV 前发送 PRET */
+  CINIT(FTP_USE_PRET, LONG, 188),
+
+  /* RTSP 请求的方法 (OPTIONS, SETUP, PLAY, etc...) */
+  CINIT(RTSP_REQUEST, LONG, 189),
+
+  /*  RTSP session 标识符 */
+  CINIT(RTSP_SESSION_ID, OBJECTPOINT, 190),
+
+  /*  RTSP 的 URI 流 */
+  CINIT(RTSP_STREAM_URI, OBJECTPOINT, 191),
+
+  /* 转换:使用的 RTSP 请求头 */
+  CINIT(RTSP_TRANSPORT, OBJECTPOINT, 192),
+
+  /* 手动初始化 RTSP CSeq 客户端的 handle */
+  CINIT(RTSP_CLIENT_CSEQ, LONG, 193),
+
+  /* 手动初始化 RTSP CSeq 服务器的 handle*/
+  CINIT(RTSP_SERVER_CSEQ, LONG, 194),
+
+  /* 流传递给 INTERLEAVEFUNCTION. */
+  CINIT(INTERLEAVEDATA, OBJECTPOINT, 195),
+
+  /*让应用程序自定义一个RTP数据的写入方法 */
+  CINIT(INTERLEAVEFUNCTION, FUNCTIONPOINT, 196),
+
+  /* 打开通配符匹配 */
+  CINIT(WILDCARDMATCH, LONG, 197),
+
+  /*单个文件（块）开始下载前调用目录匹配回调函数 */
+  CINIT(CHUNK_BGN_FUNCTION, FUNCTIONPOINT, 198),
+
+    /* 文件（块）
+     下载，或跳过后调用目录匹配回调函数 */
+  CINIT(CHUNK_END_FUNCTION, FUNCTIONPOINT, 199),
+
+  /* 更改通配符匹配 (fnmatch-like) 的回调函数 */
+  CINIT(FNMATCH_FUNCTION, FUNCTIONPOINT, 200),
+
+  /* 让应用程序定义自定义数据快指针 */
+  CINIT(CHUNK_DATA, OBJECTPOINT, 201),
+
+  /* FNMATCH_FUNCTION 用户指针*/
+  CINIT(FNMATCH_DATA, OBJECTPOINT, 202),
+
+  /*  sets 发送链表的 name:port:address */
+  CINIT(RESOLVE, OBJECTPOINT, 203),
+
+  /* 设置TLS身份验证的用户名 */
+  CINIT(TLSAUTH_USERNAME, OBJECTPOINT, 204),
+
+  /* 设置TLS身份验证的密码 */
+  CINIT(TLSAUTH_PASSWORD, OBJECTPOINT, 205),
+
+  /* 设置TLS身份验证的类型 */
+  CINIT(TLSAUTH_TYPE, OBJECTPOINT, 206),
+
+  /* 设为1来启用 "TE:" 在HTTP请求头添加，压缩传输编码的响应. 设为0来禁用 TE:
+     在传出请求。当前默认为0, 未来的 libcurl 可能会改变.
+
+     libcurl 要求压缩的方法, 如果没有, 即使选项被设置为 1 他也不会要求压缩传输i.
+
+  */
+  CINIT(TRANSFER_ENCODING, LONG, 207),
+
+  /* 关闭socket 的回调函数 (代替 close(2)). 这个毁掉应该是 curl_closesocket_callback 类型*/
+  CINIT(CLOSESOCKETFUNCTION, FUNCTIONPOINT, 208),
+  CINIT(CLOSESOCKETDATA, OBJECTPOINT, 209),
+
+  /*允许GSSAPI证书委托 */
+  CINIT(GSSAPI_DELEGATION, LONG, 210),
+
+  /* 设置域名服务器用于DNS解析 */
+  CINIT(DNS_SERVERS, OBJECTPOINT, 211),
+
+  /* Time-out 多少秒后算做超时操作 (currently for FTP only) . */
+  CINIT(ACCEPTTIMEOUT_MS, LONG, 212),
+
+  /* S设置TCP的 keepalive */
+  CINIT(TCP_KEEPALIVE, LONG, 213),
+
+  /* non-universal 存活旋钮 (Linux, AIX, HP-UX, more) */
+  CINIT(TCP_KEEPIDLE, LONG, 214),
+  CINIT(TCP_KEEPINTVL, LONG, 215),
+
+  /* Enable/disable 特定的SSL功能的 bitmask（位掩码）, see CURLSSLOPT_* */
+  CINIT(SSL_OPTIONS, LONG, 216),
+
+  /* set the SMTP 身份验证的发起者 */
+  CINIT(MAIL_AUTH, OBJECTPOINT, 217),
+
+  CURLOPT_LASTENTRY /* 最后一个未使用 */
+} CURLoption;
+
+#ifndef CURL_NO_OLDIES /* 定义这个测试，如果你的应用程序建立的所有过时的东西都会被删掉! */
+
+/* 向后兼容旧名 */
+/* 这是定于2011年消失 */
+
+/* 7.19.1版本中加入*/
+#define CURLOPT_POST301 CURLOPT_POSTREDIR
+
+/* 这是定于2009年消失 */
+
+/*  7.17.0 版本中加入 */
+#define CURLOPT_SSLKEYPASSWD CURLOPT_KEYPASSWD
+#define CURLOPT_FTPAPPEND CURLOPT_APPEND
+#define CURLOPT_FTPLISTONLY CURLOPT_DIRLISTONLY
+#define CURLOPT_FTP_SSL CURLOPT_USE_SSL
+
+/* 以下是先前添加的 */
+
+#define CURLOPT_SSLCERTPASSWD CURLOPT_KEYPASSWD
+#define CURLOPT_KRB4LEVEL CURLOPT_KRBLEVEL
+
+#else
+/* 这是用来设置 CURL_NO_OLDIES 在编译时定义*/
+#undef CURLOPT_DNS_USE_GLOBAL_CACHE /* soon obsolete */// 作废
+#endif
+
+
+    /* 下面定义的事 CURLOPT_IPRESOLVE 选项. 如果一台主机
+     的名称解析地址使用了多个IP协议的版本, 这个选项强制使用特定的 IP 协议版本. */
+#define CURL_IPRESOLVE_WHATEVER 0 /* 默认情况下，如果你的系统允许，他会解析所有版本的 ip 地址*/
+#define CURL_IPRESOLVE_V4       1 /* 解析 ipv4 地址 */
+#define CURL_IPRESOLVE_V6       2 /* 解析 ipv6 地址 */
+
+  /* 三个方便的“aliases”，遵循的名称方案更好 */
+#define CURLOPT_WRITEDATA CURLOPT_FILE
+#define CURLOPT_READDATA  CURLOPT_INFILE
+#define CURLOPT_HEADERDATA CURLOPT_WRITEHEADER
+#define CURLOPT_RTSPHEADER CURLOPT_HTTPHEADER
+
+  /*  CURLOPT_HTTP_VERSION 使用这些枚举选项. */
+enum {
+  CURL_HTTP_VERSION_NONE, /* 这个是什么我们不关心, 我们从 library 里面选择更适合我们的版本 */
+  CURL_HTTP_VERSION_1_0,  /* 请使用HTTP 1.0的请求 */
+  CURL_HTTP_VERSION_1_1,  /* 请使用HTTP 1.1请求 */
+
+  CURL_HTTP_VERSION_LAST /* *ILLEGAL* HTTP版本 */         //非法的
+};
+
+/*
+ * 公共 RTSP 请求的枚举 API
+ */
+enum {
+    CURL_RTSPREQ_NONE, /* 列表中的第一个 */
+    CURL_RTSPREQ_OPTIONS,
+    CURL_RTSPREQ_DESCRIBE,
+    CURL_RTSPREQ_ANNOUNCE,
+    CURL_RTSPREQ_SETUP,
+    CURL_RTSPREQ_PLAY,
+    CURL_RTSPREQ_PAUSE,
+    CURL_RTSPREQ_TEARDOWN,
+    CURL_RTSPREQ_GET_PARAMETER,
+    CURL_RTSPREQ_SET_PARAMETER,
+    CURL_RTSPREQ_RECORD,
+    CURL_RTSPREQ_RECEIVE,
+    CURL_RTSPREQ_LAST /* 列表中的最后一个 */
+};
+
+  /* 这些枚举选项在 CURLOPT_NETRC 里面使用. */
+enum CURL_NETRC_OPTION {
+  CURL_NETRC_IGNORED,     /* 默认 .netrc 文件永远不会被读取. */
+  CURL_NETRC_OPTIONAL,    /* A user: URL里面的密码选项比  .netrc 文件里面的优先考虑. */
+  CURL_NETRC_REQUIRED,    /* A user:URL中的密码将被忽略.
+                           * 除非在 .netrc 里面查询不到密码选项. */
+  CURL_NETRC_LAST
+};
+
+enum {
+  CURL_SSLVERSION_DEFAULT,
+  CURL_SSLVERSION_TLSv1,
+  CURL_SSLVERSION_SSLv2,
+  CURL_SSLVERSION_SSLv3,
+
+  CURL_SSLVERSION_LAST /* 从来不使用，保持最后 */
+};
+
+enum CURL_TLSAUTH {
+  CURL_TLSAUTH_NONE,
+  CURL_TLSAUTH_SRP,
+  CURL_TLSAUTH_LAST /* 从来不使用，保持最后 */
+};
+
+/* 符号在 CURLOPT_POSTREDIR.
+   CURL_REDIR_POST_301, CURL_REDIR_POST_302 and CURL_REDIR_POST_303
+  里面可以按位或运算例如： CURL_REDIR_POST_301 | CURL_REDIR_POST_302
+   | CURL_REDIR_POST_303 == CURL_REDIR_POST_ALL */
+
+#define CURL_REDIR_GET_ALL  0
+#define CURL_REDIR_POST_301 1
+#define CURL_REDIR_POST_302 2
+#define CURL_REDIR_POST_303 4
+#define CURL_REDIR_POST_ALL \
+    (CURL_REDIR_POST_301|CURL_REDIR_POST_302|CURL_REDIR_POST_303)
+
+typedef enum {
+  CURL_TIMECOND_NONE,
+
+  CURL_TIMECOND_IFMODSINCE,
+  CURL_TIMECOND_IFUNMODSINCE,
+  CURL_TIMECOND_LASTMOD,
+
+  CURL_TIMECOND_LAST
+} curl_TimeCond;
+
+
+/* 未来版本的 libcurl 可能会删除 curl_strequal() and curl_strnequal() , see lib/README.curlx for details */
+CURL_EXTERN int (curl_strequal)(const char *s1, const char *s2);
+CURL_EXTERN int (curl_strnequal)(const char *s1, const char *s2, size_t n);
+
+/*  CURLFORM_<name> 里面的 name 要大写*/
+#ifdef CFINIT
+#undef CFINIT
+#endif
+
+#ifdef CURL_ISOCPP
+#define CFINIT(name) CURLFORM_ ## name
+#else
+/* 宏 "##"  在 ISO C 中定义, 我们假设 pre-ISO C 不支持他. */
+#define CFINIT(name) CURLFORM_/**/name
+#endif
+
+typedef enum {
+  CFINIT(NOTHING),        /********* 第一个是未使用的 ************/
+
+  /*  */
+  CFINIT(COPYNAME),
+  CFINIT(PTRNAME),
+  CFINIT(NAMELENGTH),
+  CFINIT(COPYCONTENTS),
+  CFINIT(PTRCONTENTS),
+  CFINIT(CONTENTSLENGTH),
+  CFINIT(FILECONTENT),
+  CFINIT(ARRAY),
+  CFINIT(OBSOLETE),
+  CFINIT(FILE),
+
+  CFINIT(BUFFER),
+  CFINIT(BUFFERPTR),
+  CFINIT(BUFFERLENGTH),
+
+  CFINIT(CONTENTTYPE),
+  CFINIT(CONTENTHEADER),
+  CFINIT(FILENAME),
+  CFINIT(END),
+  CFINIT(OBSOLETE2),
+
+  CFINIT(STREAM),
+
+  CURLFORM_LASTENTRY /* 最后一个未使用 */
+} CURLformoption;
+
+#undef CFINIT /* done */
+
+/*  CURLFORM_ARRAY 的参数结构*/
+struct curl_forms {
+  CURLformoption option;
+  const char     *value;
+};
+
+/* 使用多个 formpost 构建 */
+/* Returns  curl_formadd() 的代码
+ *
+ * Returns:
+ * CURL_FORMADD_OK             成功
+ * CURL_FORMADD_MEMORY         如果分配FormInfo失败 
+ * CURL_FORMADD_OPTION_TWICE   如果其中一个选项两种形式
+ * CURL_FORMADD_NULL           如果一个空指针被赋给一个char
+ * CURL_FORMADD_MEMORY         如果一个FormInfo结构分配失败 
+ * CURL_FORMADD_UNKNOWN_OPTION 如果一个未知的选项被使用
+ * CURL_FORMADD_INCOMPLETE     如果一些FormInfo的是不完整的（或错误）
+ * CURL_FORMADD_MEMORY         如果curl_httppost结构分配失败
+ * CURL_FORMADD_MEMORY         如果一些字符串复制分配失败.
+ * CURL_FORMADD_ILLEGAL_ARRAY  如果在 array 里面使用了一个非法选项
+ *
+ ***************************************************************************/
+typedef enum {
+  CURL_FORMADD_OK, /* first, no error */
+
+  CURL_FORMADD_MEMORY,
+  CURL_FORMADD_OPTION_TWICE,
+  CURL_FORMADD_NULL,
+  CURL_FORMADD_UNKNOWN_OPTION,
+  CURL_FORMADD_INCOMPLETE,
+  CURL_FORMADD_ILLEGAL_ARRAY,
+  CURL_FORMADD_DISABLED, /* 禁用 libcurl 的构建*/
+
+  CURL_FORMADD_LAST /* last */
+} CURLFORMcode;
+
+/*
+ * NAME curl_formadd()
+ *
+ * DESCRIPTION
+ *
+ * 构建多个 formposts 的先进功能. 每次调用添加其中的一部分，然后构建一个完整的 post. 然后使用
+ * CURLOPT_HTTPPOST 把它们送到 libcurl.
+ */
+CURL_EXTERN CURLFORMcode curl_formadd(struct curl_httppost **httppost,
+                                      struct curl_httppost **last_post,
+                                      ...);
+
+/*
+ *  curl_formget() 的回调函数
+ * 空的 *arg 指针，作为第二个参数传递给 curl_formget() .
+ * 传递给他的字符串缓冲不能被释放.
+ *  成功时应该把 buffer length 传递给 "len"，然后返回 len
+ */
+typedef size_t (*curl_formget_callback)(void *arg, const char *buf,
+                                        size_t len);
+
+/*
+ * NAME curl_formget()
+ *
+ * DESCRIPTION
+ *
+ * 使用 curl_formadd()在构建时序列花一个 curl_httppost结构.
+ * 第二个参数接受一个空指针传递给 curl_formget_callback 函数.
+ * Returns 0 on success.
+ */
+CURL_EXTERN int curl_formget(struct curl_httppost *form, void *arg,
+                             curl_formget_callback append);
+/*
+ * NAME curl_formfree()
+ *
+ * DESCRIPTION
+ *
+ * 释放一个用 curl_formadd() 创建的 formpost.
+ */
+CURL_EXTERN void curl_formfree(struct curl_httppost *form);
+
+/*
+ * NAME curl_getenv()
+ *
+ * DESCRIPTION
+ *
+ * Returns 一个 malloc()'ed 出来的字符串， 他必须在使用完后 curl_free()ed
+ * DEPRECATED - see lib/README.curlx
+ */
+CURL_EXTERN char *curl_getenv(const char *variable);
+
+/*
+ * NAME curl_version()
+ *
+ * DESCRIPTION
+ *
+ * Returns 描述 libcurl 版本的静态字符串.
+ */
+CURL_EXTERN char *curl_version(void);
+
+/*
+ * NAME curl_easy_escape()
+ *
+ * DESCRIPTION
+ *
+ * Escapes URL strings (
+ * 转换 %XX URLs 版本里面的非法 字符串). 这个函数返回一个新分配的字符串或NULL如果（发生错误）。
+ * 
+ */
+CURL_EXTERN char *curl_easy_escape(CURL *handle,
+                                   const char *string,
+                                   int length);
+
+/* 以前的版本: */
+CURL_EXTERN char *curl_escape(const char *string,
+                              int length);
+
+
+/*
+ * NAME curl_easy_unescape()
+ *
+ * DESCRIPTION
+ *
+ * Unescapes URL 编码的字符串 (准缓所有的代码到 %XX 它们的 8bit
+ * 版本). This 这个函数返回一个新分配的字符串或NULL如果（发生错误）
+ * Conversion Note: 转换非ASCII平台ASCII％XX代码，转换成主机支持的编码
+ * 
+ */
+CURL_EXTERN char *curl_easy_unescape(CURL *handle,
+                                     const char *string,
+                                     int length,
+                                     int *outlength);
+
+/* 以前的版本 */
+CURL_EXTERN char *curl_unescape(const char *string,
+                                int length);
+
+/*
+ * NAME curl_free()
+ *
+ * DESCRIPTION
+ *
+ *提供在同一个转换单元做分配
+ *  Added in libcurl 7.10
+ */
+CURL_EXTERN void curl_free(void *p);
+
+/*
+ * NAME curl_global_init()
+ *
+ * DESCRIPTION
+ *
+ * 在每个应用程序使用libcurl和其他libcurl的函数之前调用curl_global_init（）一次
+ * 这个功能不是线程安全的!
+ */
+CURL_EXTERN CURLcode curl_global_init(long flags);
+
+/*
+ * NAME curl_global_init_mem()
+ *
+ * DESCRIPTION
+ *
+ * 每个应用程序使用 libcurl 时，都应该调用 curl_global_init() or curl_global_init_mem() 一次. 此功能可被用于
+ * libcurl的初始化和设置用户定义的内存管理回调
+ *功能。用户可以实现内存管理例程来检查
+ *内存泄漏 ，检查误用的 curl 库 etc.  调用用户注册的回调例程，代替系统管理例程.
+ */
+CURL_EXTERN CURLcode curl_global_init_mem(long flags,
+                                          curl_malloc_callback m,
+                                          curl_free_callback f,
+                                          curl_realloc_callback r,
+                                          curl_strdup_callback s,
+                                          curl_calloc_callback c);
+
+/*
+ * NAME curl_global_cleanup()
+ *
+ * DESCRIPTION
+ *
+ * 每个应用程序使用 libcurl 时，都应该调用一次curl_global_cleanup() 
+ */
+CURL_EXTERN void curl_global_cleanup(void);
+
+/*  CURLOPT_QUOTE 选项的链表结构 */
+struct curl_slist {
+  char *data;
+  struct curl_slist *next;
+};
+
+/*
+ * NAME curl_slist_append()
+ *
+ * DESCRIPTION
+ *
+ * 一个字符串附加到一个链表。如果没有列表的存在，第一次将创建 
+ *. Returns 追加后的新链表.
+ */
+CURL_EXTERN struct curl_slist *curl_slist_append(struct curl_slist *,
+                                                 const char *);
+
+/*
+ * NAME curl_slist_free_all()
+ *
+ * DESCRIPTION
+ *
+ * 释放先抢创建的 curl_slist.
+ */
+CURL_EXTERN void curl_slist_free_all(struct curl_slist *);
+
+/*
+ * NAME curl_getdate()
+ *
+ * DESCRIPTION
+ *
+ * 返回的时间，第一个参数以秒为1970年以来一月的时间字符串 
+ * 在第二个参数是时间参数未使用应设置为NULL。
+ */
+CURL_EXTERN time_t curl_getdate(const char *p, const time_t *unused);
+
+/* 有关证书链信息，仅用于OpenSSL的构建. 使用 CURLOPT_CERTINFO / CURLINFO_CERTINFO  询问*/
+struct curl_certinfo {
+  int num_of_certs;             /* 证书信息的数量 */
+    struct curl_slist **certinfo; /* 每个数组中的索引，都有一个
+                                   链表中的文本信息（格式为 "name: value" ）
+                                   */
+};
+
+#define CURLINFO_STRING   0x100000
+#define CURLINFO_LONG     0x200000
+#define CURLINFO_DOUBLE   0x300000
+#define CURLINFO_SLIST    0x400000
+#define CURLINFO_MASK     0x0fffff
+#define CURLINFO_TYPEMASK 0xf00000
+
+typedef enum {
+  CURLINFO_NONE, /* 第一，从来不使用这个 */
+  CURLINFO_EFFECTIVE_URL    = CURLINFO_STRING + 1,
+  CURLINFO_RESPONSE_CODE    = CURLINFO_LONG   + 2,
+  CURLINFO_TOTAL_TIME       = CURLINFO_DOUBLE + 3,
+  CURLINFO_NAMELOOKUP_TIME  = CURLINFO_DOUBLE + 4,
+  CURLINFO_CONNECT_TIME     = CURLINFO_DOUBLE + 5,
+  CURLINFO_PRETRANSFER_TIME = CURLINFO_DOUBLE + 6,
+  CURLINFO_SIZE_UPLOAD      = CURLINFO_DOUBLE + 7,
+  CURLINFO_SIZE_DOWNLOAD    = CURLINFO_DOUBLE + 8,
+  CURLINFO_SPEED_DOWNLOAD   = CURLINFO_DOUBLE + 9,
+  CURLINFO_SPEED_UPLOAD     = CURLINFO_DOUBLE + 10,
+  CURLINFO_HEADER_SIZE      = CURLINFO_LONG   + 11,
+  CURLINFO_REQUEST_SIZE     = CURLINFO_LONG   + 12,
+  CURLINFO_SSL_VERIFYRESULT = CURLINFO_LONG   + 13,
+  CURLINFO_FILETIME         = CURLINFO_LONG   + 14,
+  CURLINFO_CONTENT_LENGTH_DOWNLOAD   = CURLINFO_DOUBLE + 15,
+  CURLINFO_CONTENT_LENGTH_UPLOAD     = CURLINFO_DOUBLE + 16,
+  CURLINFO_STARTTRANSFER_TIME = CURLINFO_DOUBLE + 17,
+  CURLINFO_CONTENT_TYPE     = CURLINFO_STRING + 18,
+  CURLINFO_REDIRECT_TIME    = CURLINFO_DOUBLE + 19,
+  CURLINFO_REDIRECT_COUNT   = CURLINFO_LONG   + 20,
+  CURLINFO_PRIVATE          = CURLINFO_STRING + 21,
+  CURLINFO_HTTP_CONNECTCODE = CURLINFO_LONG   + 22,
+  CURLINFO_HTTPAUTH_AVAIL   = CURLINFO_LONG   + 23,
+  CURLINFO_PROXYAUTH_AVAIL  = CURLINFO_LONG   + 24,
+  CURLINFO_OS_ERRNO         = CURLINFO_LONG   + 25,
+  CURLINFO_NUM_CONNECTS     = CURLINFO_LONG   + 26,
+  CURLINFO_SSL_ENGINES      = CURLINFO_SLIST  + 27,
+  CURLINFO_COOKIELIST       = CURLINFO_SLIST  + 28,
+  CURLINFO_LASTSOCKET       = CURLINFO_LONG   + 29,
+  CURLINFO_FTP_ENTRY_PATH   = CURLINFO_STRING + 30,
+  CURLINFO_REDIRECT_URL     = CURLINFO_STRING + 31,
+  CURLINFO_PRIMARY_IP       = CURLINFO_STRING + 32,
+  CURLINFO_APPCONNECT_TIME  = CURLINFO_DOUBLE + 33,
+  CURLINFO_CERTINFO         = CURLINFO_SLIST  + 34,
+  CURLINFO_CONDITION_UNMET  = CURLINFO_LONG   + 35,
+  CURLINFO_RTSP_SESSION_ID  = CURLINFO_STRING + 36,
+  CURLINFO_RTSP_CLIENT_CSEQ = CURLINFO_LONG   + 37,
+  CURLINFO_RTSP_SERVER_CSEQ = CURLINFO_LONG   + 38,
+  CURLINFO_RTSP_CSEQ_RECV   = CURLINFO_LONG   + 39,
+  CURLINFO_PRIMARY_PORT     = CURLINFO_LONG   + 40,
+  CURLINFO_LOCAL_IP         = CURLINFO_STRING + 41,
+  CURLINFO_LOCAL_PORT       = CURLINFO_LONG   + 42,
+  /* 在下面填入新的条目! */
+
+  CURLINFO_LASTONE          = 42
+} CURLINFO;
+
+/* CURLINFO_RESPONSE_CODE 选型以前的名字时
+   CURLINFO_HTTP_CODE */
+#define CURLINFO_HTTP_CODE CURLINFO_RESPONSE_CODE
+
+typedef enum {
+  CURLCLOSEPOLICY_NONE, /* 第一，从来不使用这个*/
+
+  CURLCLOSEPOLICY_OLDEST,
+  CURLCLOSEPOLICY_LEAST_RECENTLY_USED,
+  CURLCLOSEPOLICY_LEAST_TRAFFIC,
+  CURLCLOSEPOLICY_SLOWEST,
+  CURLCLOSEPOLICY_CALLBACK,
+
+  CURLCLOSEPOLICY_LAST /* last, never use this */
+} curl_closepolicy;
+
+#define CURL_GLOBAL_SSL (1<<0)
+#define CURL_GLOBAL_WIN32 (1<<1)
+#define CURL_GLOBAL_ALL (CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32)
+#define CURL_GLOBAL_NOTHING 0
+#define CURL_GLOBAL_DEFAULT CURL_GLOBAL_ALL
+
+
+/*****************************************************************************
+ * 设置定义，PROTOS等共享的东西。 
+ */
+
+/* 为不同的数据添加一个单一的共享锁 */
+typedef enum {
+  CURL_LOCK_DATA_NONE = 0,
+  /*  CURL_LOCK_DATA_SHARE 是内部使用
+   *  锁定只是改变内部共享状态本身
+   *  
+   */
+  CURL_LOCK_DATA_SHARE,
+  CURL_LOCK_DATA_COOKIE,
+  CURL_LOCK_DATA_DNS,
+  CURL_LOCK_DATA_SSL_SESSION,
+  CURL_LOCK_DATA_CONNECT,
+  CURL_LOCK_DATA_LAST
+} curl_lock_data;
+
+/* 不同的锁访问类型 */
+typedef enum {
+  CURL_LOCK_ACCESS_NONE = 0,   /* 未指定动作 */
+  CURL_LOCK_ACCESS_SHARED = 1, /* 可能可读 */
+  CURL_LOCK_ACCESS_SINGLE = 2, /* 可能可写 */
+  CURL_LOCK_ACCESS_LAST        /* 没有使用 */
+} curl_lock_access;
+
+typedef void (*curl_lock_function)(CURL *handle,
+                                   curl_lock_data data,
+                                   curl_lock_access locktype,
+                                   void *userptr);
+typedef void (*curl_unlock_function)(CURL *handle,
+                                     curl_lock_data data,
+                                     void *userptr);
+
+typedef void CURLSH;
+
+typedef enum {
+  CURLSHE_OK,  /* 一切 正常 */
+  CURLSHE_BAD_OPTION, /* 1 */
+  CURLSHE_IN_USE,     /* 2 */
+  CURLSHE_INVALID,    /* 3 */
+  CURLSHE_NOMEM,      /* 4 超出内存 */
+  CURLSHE_NOT_BUILT_IN, /* 5 功能库中不存在的 */
+  CURLSHE_LAST        /* never use */
+} CURLSHcode;
+
+typedef enum {
+  CURLSHOPT_NONE,  /* don't use */
+  CURLSHOPT_SHARE,   /* 指定数据类型分享 */
+  CURLSHOPT_UNSHARE, /* 指定停止共享的数据类型 */
+  CURLSHOPT_LOCKFUNC,   /* 通过一个 'curl_lock_function' 指针 */
+  CURLSHOPT_UNLOCKFUNC, /* 通过一个 'curl_unlock_function' 指针 */
+    CURLSHOPT_USERDATA,   /* 通过一个用户使用的数据指针 锁定/解锁 回调函数 */
+  CURLSHOPT_LAST  /* never use */
+} CURLSHoption;
+
+CURL_EXTERN CURLSH *curl_share_init(void);
+CURL_EXTERN CURLSHcode curl_share_setopt(CURLSH *, CURLSHoption option, ...);
+CURL_EXTERN CURLSHcode curl_share_cleanup(CURLSH *);
+
+/****************************************************************************
+ * 查询 curl 库，运行时的 结构信息
+ */
+
+typedef enum {
+  CURLVERSION_FIRST,
+  CURLVERSION_SECOND,
+  CURLVERSION_THIRD,
+  CURLVERSION_FOURTH,
+  CURLVERSION_LAST /* 从来没有真正使用 */
+} CURLversion;
+
+/*  'CURLVERSION_NOW' 符号名 基本所有的程序都希望得到的版本信息. 它意味着可以根据版本号预测结构信息. 如果结构都没有改变我们重新从上面定义一个枚举. */
+#define CURLVERSION_NOW CURLVERSION_FOURTH
+
+typedef struct {
+  CURLversion age;          /* 返回的struct年龄 */
+  const char *version;      /* LIBCURL_VERSION */
+  unsigned int version_num; /* LIBCURL_VERSION_NUM */
+  const char *host;         /* OS/host/cpu/machine when configured */
+  int features;             /* bitmask, 请参阅下面的定义 */
+  const char *ssl_version;  /* 可读的字符串 */
+  long ssl_version_num;     /*不再使用，总是 0*/
+  const char *libz_version; /* 可读的字符串 */
+  /* 使用一个 NULL protoname 时协议会终止
+  const char * const *protocols;
+
+  /*  CURLVERSION_SECOND 添加了下面的字段*/
+  const char *ares;
+  int ares_num;
+
+  /* 这些字段在 CURLVERSION_THIRD 里面添加了*/
+  const char *libidn;
+
+  /* 这些字段在 CURLVERSION_FOURTH 里面添加了 */
+
+  /* 如果使用 HAVE_ICONV 构建和  '_libiconv_version' */
+  int iconv_ver_num;
+
+  const char *libssh_version; /* 可读的字符串 */
+
+} curl_version_info_data;
+
+#define CURL_VERSION_IPV6      (1<<0)  /* IPv6-enabled */
+#define CURL_VERSION_KERBEROS4 (1<<1)  /* Kerberos身份验证的支持*/
+#define CURL_VERSION_SSL       (1<<2)  /* SSL 选项都存在*/
+#define CURL_VERSION_LIBZ      (1<<3)  /* libz 存在的特点 */
+#define CURL_VERSION_NTLM      (1<<4)  /* 支持NTLM身份验证*/
+#define CURL_VERSION_GSSNEGOTIATE (1<<5) /*支持 Negotiate（协商） 认证 */
+#define CURL_VERSION_DEBUG     (1<<6)  /* 内置调试功能*/
+#define CURL_VERSION_ASYNCHDNS (1<<7)  /* 异步DNS解析 */
+#define CURL_VERSION_SPNEGO    (1<<8)  /* SPNEGO 认证 */
+#define CURL_VERSION_LARGEFILE (1<<9)  /* 支持大于 2GB 的文件 */
+#define CURL_VERSION_IDN       (1<<10) /* 国际域名支持（万维网域名支持） */
+#define CURL_VERSION_SSPI      (1<<11) /* 支持 SSPI */
+#define CURL_VERSION_CONV      (1<<12) /* 支持字符转换*/
+#define CURL_VERSION_CURLDEBUG (1<<13) /* 支持调试内存跟踪*/
+#define CURL_VERSION_TLSAUTH_SRP (1<<14) /* TLS-SRP 支持授权 */
+#define CURL_VERSION_NTLM_WB   (1<<15) /* NTLM 是 winbind 的代理助手 */
+
+ /*
+ * NAME curl_version_info()
+ *
+ * DESCRIPTION
+ *
+ * 这个函数返回一个指针的静态副本版本信息
+ * 结构。见上文。
+ */
+CURL_EXTERN curl_version_info_data *curl_version_info(CURLversion);
+
+/*
+ * NAME curl_easy_strerror()
+ *
+ * DESCRIPTION
+ *
+ * curl_easy_strerror 功能可用于打开一个 CURLSHcode
+ * 可能遇到可读的字符串错误。这是非常有用的
+ * 打印错误信息.
+ */
+CURL_EXTERN const char *curl_easy_strerror(CURLcode);
+
+/*
+ * NAME curl_share_strerror()
+ *
+ * DESCRIPTION
+ *
+ *  curl_share_strerror 功能可用于打开一个 CURLSHcode
+ * 可能遇到可读的字符串错误。这是非常有用的
+ * 打印错误信息.
+ */
+CURL_EXTERN const char *curl_share_strerror(CURLSHcode);
+
+/*
+ * NAME curl_easy_pause()
+ *
+ * 说明
+ *
+ *  curl_easy_pause 的 暂停/取消暂停 功能。通过设置 bitmask（位掩码）选择一个新的状态
+ * 方便使用下面的定义
+ *
+ */
+CURL_EXTERN CURLcode curl_easy_pause(CURL *handle, int bitmask);
+
+#define CURLPAUSE_RECV      (1<<0)
+#define CURLPAUSE_RECV_CONT (0)
+
+#define CURLPAUSE_SEND      (1<<2)
+#define CURLPAUSE_SEND_CONT (0)
+
+#define CURLPAUSE_ALL       (CURLPAUSE_RECV|CURLPAUSE_SEND)
+#define CURLPAUSE_CONT      (CURLPAUSE_RECV_CONT|CURLPAUSE_SEND_CONT)
+
+#ifdef  __cplusplus
+}
+#endif
+
+/* 不幸的是 , easy.h 、 multi.h  在它们包含东西之前，它们需要 options 、 info！ */
+#include "easy.h" /* (没有简单的东西，curl什么功能也没有)nothing in curl is fun without the easy stuff */
+#include "multi.h"
+
+/*  typechecker（类型检查）在 C++ 中不工作（yet） */
+#if defined(__GNUC__) && defined(__GNUC_MINOR__) && \
+    ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)) && \
+    !defined(__cplusplus) && !defined(CURL_DISABLE_TYPECHECK)
+#include "typecheck-gcc.h"
+#else
+#if defined(__STDC__) && (__STDC__ >= 1)
+/* 通过这三个参数确定应用的作者，这些预处理函数取代了相同功能的回调
+*/
+#define curl_easy_setopt(handle,opt,param) curl_easy_setopt(handle,opt,param)
+#define curl_easy_getinfo(handle,info,arg) curl_easy_getinfo(handle,info,arg)
+#define curl_share_setopt(share,opt,param) curl_share_setopt(share,opt,param)
+#define curl_multi_setopt(handle,opt,param) curl_multi_setopt(handle,opt,param)
+#endif /* __STDC__ >= 1 */
+#endif /* gcc >= 4.3 && !__cplusplus */
+
+#endif /* __CURL_CURL_H */

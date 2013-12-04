@@ -1,6 +1,6 @@
 
 #include "AppenderFile.h"
-
+#include "../shared/Util.h"
 AppenderFile::AppenderFile(uint8_t id, std::_tstring const& name, LogLevel level, const _tchar* _filename, const _tchar* _logDir, const _tchar* _mode, AppenderFlags _flags)
     : Appender(id, name, APPENDER_FILE, level, _flags)
     , filename(_filename)
@@ -33,7 +33,16 @@ void AppenderFile::_write(LogMessage& message)
 
     if (logfile)
     {
-        _tfprintf(logfile, _T("%s%s"), message.prefix.c_str(), message.text.c_str());
+		std::string text;
+		std::string prefix;
+#ifdef _UNICODE 
+	   WStrToConsole(message.text,text);
+	   WStrToConsole(message.prefix,prefix);
+#else
+		text=message.text;
+		prefix=message.prefix;
+#endif 
+		fprintf(logfile,"%s%s",prefix.c_str(),text.c_str());
         fflush(logfile);
 
         if (dynamicName)

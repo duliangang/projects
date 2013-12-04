@@ -1,16 +1,30 @@
 #ifndef _SINGLETON_H_
 #define _SINGLETON_H_
 #include "base.h"
-
 template<class TYPE,class MUTEX_TYPE>
 class Singleton
 {
 public:
+
+	template<class _TYPE,class _MUTEX_TYPE>
+	class Garbo
+	{
+	public:
+		~Garbo()
+		{
+			if(Singleton<_TYPE,_MUTEX_TYPE>::m_t)
+			{
+				delete Singleton<_TYPE,_MUTEX_TYPE>::m_t;
+				Singleton<_TYPE,_MUTEX_TYPE>::m_t=NULL;
+			}
+		}
+	};
 	static TYPE* GetInstance()
 	{
 		if(m_t==NULL)
 		{
 			MUTEX_TYPE mutex_;
+			static Garbo<TYPE,MUTEX_TYPE> _garbo; 
 			AutoLock<MUTEX_TYPE> autolock(&mutex_);
 			if(m_t==NULL)
 			{
@@ -19,6 +33,13 @@ public:
 		}
 		return m_t;
 	}
+	~Singleton()
+	{
+		delete Singleton<TYPE,MUTEX_TYPE>::m_t;
+		Singleton<TYPE,MUTEX_TYPE>::m_t=NULL;
+	}
+	
+	
 private:
 	static TYPE* m_t;
 };

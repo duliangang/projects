@@ -1,4 +1,5 @@
 #include "Msg_Queue_Ex.h"
+#include "apr/apr_base.h"
 FILE* fp=0;
 std::_tstring GetTimestampStr()
 {
@@ -23,7 +24,7 @@ struct content
 	}
 	~content()
 	{
-		
+
 	}
 	std::_tstring m_str;
 	int m_number;
@@ -50,7 +51,7 @@ public:
 		while(!m_bStop)
 		{
 			content* con;
-	
+
 			if(m_queue.dequeue(con)!=0)
 			{
 				break;
@@ -61,8 +62,8 @@ public:
 	}
 	int enqueue(content* _content)
 	{
-		 m_queue.enqueue(_content);
-		 return 0;
+		m_queue.enqueue(_content);
+		return 0;
 	}
 private:
 	Msg_Queue<content,Thread_Mutex> m_queue;
@@ -107,54 +108,54 @@ private:
 };
 
 
-class Msg_Queue_Ex_text:public Msg_Queue_Ex<content>
-{
-public:
-	virtual void DataFunc(content& con)
-	{
-		_tfprintf(fp,TEXT("Msg_Queue_Ex_text-- log:recv packet number %d, send time is %s\n"),con.m_number,con.m_str.c_str());
-	}
-};
+//class Msg_Queue_Ex_text:public Msg_Queue_Ex<content>
+//{
+//public:
+//	virtual void DataFunc(content& con)
+//	{
+//		_tfprintf(fp,TEXT("Msg_Queue_Ex_text-- log:recv packet number %d, send time is %s\n"),con.m_number,con.m_str.c_str());
+//	}
+//};
 
 
-class  task_Create_ToMsg_Queue_Ex:public Task_Base
-{
-public:
-	task_Create_ToMsg_Queue_Ex(int thread_count,Msg_Queue_Ex_text* target):m_target(target),Task_Base(thread_count)
-	{
-		packetsize=0;
-		m_bStop=false;
-	}
-	void stop()
-	{
-		m_bStop=true;
-	}
-	virtual void svc()
-	{
-		while(!m_bStop)
-		{
-			_tchar msg[100];
-			_tsprintf(msg,TEXT("%s"),GetTimestampStr().c_str());
-			 content t(GetTimestampStr(),packetsize++);
-			m_target->Put(t);
-#ifdef WIN32
-			Sleep(10);
-#elif defined _LINUX
-			delay(10);
-#endif
-
-		}
-	}
-	virtual void close()
-	{
-		_tfprintf(fp,TEXT("task_Create_ToMsg_Queue_Ex log:total send msg count:  %d\n"),packetsize);
-		return ;
-	}
-private:
-	int packetsize;
-	bool m_bStop;
-	Msg_Queue_Ex_text* m_target;
-};
+//class  task_Create_ToMsg_Queue_Ex:public Task_Base
+//{
+//public:
+//	task_Create_ToMsg_Queue_Ex(int thread_count,Msg_Queue_Ex_text* target):m_target(target),Task_Base(thread_count)
+//	{
+//		packetsize=0;
+//		m_bStop=false;
+//	}
+//	void stop()
+//	{
+//		m_bStop=true;
+//	}
+//	virtual void svc()
+//	{
+//		while(!m_bStop)
+//		{
+//			_tchar msg[100];
+//			_tsprintf(msg,TEXT("%s"),GetTimestampStr().c_str());
+//			content t(GetTimestampStr(),packetsize++);
+//			m_target->Put(t);
+//#ifdef WIN32
+//			Sleep(10);
+//#elif defined _LINUX
+//			delay(10);
+//#endif
+//
+//		}
+//	}
+//	virtual void close()
+//	{
+//		_tfprintf(fp,TEXT("task_Create_ToMsg_Queue_Ex log:total send msg count:  %d\n"),packetsize);
+//		return ;
+//	}
+//private:
+//	int packetsize;
+//	bool m_bStop;
+//	Msg_Queue_Ex_text* m_target;
+//};
 //Thread_Semaphore *sam;
 //
 //HANDLE SemapleHandle;
@@ -195,30 +196,30 @@ private:
 //};
 int main()
 {
-	
-		fp=_tfopen(_T("print.txt"),_T("w"));
-		_task_process process(10);
-		_task_Create creator(30,&process);
-		process.open();
-		creator.open();
-		for(int i=0;i!=1000;i++)
-		{
-#ifdef WIN32	
-			Sleep(10);
-#elif defined _LINUX
-			delay(10);
-#endif
-		}
-		creator.stop();
-		creator.join();
-		process.stop();
 
-		process.join();
-		std::_tstring str;
-		std::_tcin>>str;
-		fclose(fp);
-		return 0;
-	
+	fp=_tfopen(_T("print.txt"),_T("w"));
+	_task_process process(10);
+	_task_Create creator(30,&process);
+	process.open();
+	creator.open();
+	for(int i=0;i!=1000;i++)
+	{
+#ifdef WIN32	
+		Sleep(10);
+#elif defined _LINUX
+		delay(10);
+#endif
+	}
+	creator.stop();
+	creator.join();
+	process.stop();
+
+	process.join();
+	std::_tstring str;
+	std::_tcin>>str;
+	fclose(fp);
+	return 0;
+
 }
 
 

@@ -109,11 +109,12 @@ const _tchar* Appender::getLogLevelString(LogLevel level)
 		return _T("DISABLED");
 	}
 }
-
-_tchar const* Appender::getLogFilterTypeString(LogFilterType type)
+std::map<uint8_t,std::_tstring> Appender::MapLogFilterTypeString;
+_tchar const* Appender::getLogFilterTypeString(uint8_t type)
 {
-	switch (type)
+	if(MapLogFilterTypeString.find(type)!=MapLogFilterTypeString.end())
 	{
+		return MapLogFilterTypeString[type].c_str();
 	}
 	return _T("???");
 }

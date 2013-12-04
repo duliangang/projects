@@ -143,7 +143,15 @@ void AppenderConsole::ResetColor(bool stdout_stream)
 void AppenderConsole::_write(LogMessage& message)
 {
     bool stdout_stream = message.level == LOG_LEVEL_ERROR || message.level == LOG_LEVEL_FATAL;
-
+	std::string text;
+	std::string prefix;
+#ifdef _UNICODE 
+	WStrToConsole(message.text,text);
+	WStrToConsole(message.prefix,prefix);
+#else
+	text=message.text;
+	prefix=message.prefix;
+#endif 
     if (_colored)
     {
         uint8_t index;
@@ -171,9 +179,10 @@ void AppenderConsole::_write(LogMessage& message)
         }
 
         SetColor(stdout_stream, _colors[index]);
-        utf8printf(stdout_stream ? stdout : stderr, "%s%s", message.prefix.c_str(), message.text.c_str());
+        //utf8printf(stdout_stream ? stdout : stderr, _T("%s%s"), message.prefix.c_str(), message.text.c_str());
+		fprintf(stdout_stream ? stdout : stderr, "%s%s", prefix.c_str(), text.c_str());
         ResetColor(stdout_stream);
     }
     else
-        utf8printf(stdout_stream ? stdout : stderr, "%s%s", message.prefix.c_str(), message.text.c_str());
+     	fprintf(stdout_stream ? stdout : stderr, "%s%s", prefix.c_str(), text.c_str());
 }
