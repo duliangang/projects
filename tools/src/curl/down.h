@@ -1,7 +1,12 @@
+#ifndef _HTTPDOWN_DLL_H
+#define _HTTPDOWN_DLL_H
+#define DLLEXPORT __declspec(dllexport)
 #include "log/log.h"
 #include "config/config.h"
 #include <string>
 #include <vector>
+
+
 enum LogFilterType
 {
 	LOG_FILTER_CUR_RET,
@@ -18,16 +23,24 @@ struct curl_down_handle;
 typedef int (*download_callback_fun)(void* pPar,curl_down_handle* complete_handle);
 typedef int (*download_progress_fun)(void* pPar,unsigned int totalsize,unsigned int nowsize);
 
-curl_http_handle* curl_http_create();
-int curl_add_send_data(curl_http_handle* http_handle,const char *key,const char* var);
-void curl_clear_send_data(curl_http_handle* http_handle);
-int  curl_send_data(curl_http_handle* http_handle,std::string url,std::vector<char> result,int timeoutSec);
+DLLEXPORT curl_http_handle* _curl_http_create();
+DLLEXPORT void curl_http_free(curl_http_handle* handle);
+DLLEXPORT int curl_add_send_data(curl_http_handle* http_handle,const char *key,const char* var);
+DLLEXPORT void curl_clear_send_data(curl_http_handle* http_handle);
+DLLEXPORT int  curl_send_data(curl_http_handle* http_handle,std::string url,std::vector<char>& result,int timeoutSec);
+DLLEXPORT int curl_get_data_from_url(curl_http_handle* http_handle,std::string url,std::vector<char>& result,int timeoutSec);
 
 
-curl_down_handle * curl_download_handle_create(const char* url,const  char*  filename);
-int curl_download_stop(curl_down_handle* down_handle);
-int curl_download_start(curl_down_handle* down_handle);
-int curl_download_set_complete_fun(curl_down_handle* down_handle,void* pPar,download_callback_fun complete_fun);
-int curl_download_set_error_fun(curl_down_handle* down_handle,void* pPar,download_callback_fun error_fun);
-int curl_download_set_progress_fun(curl_down_handle* down_handle,void* pPar,download_progress_fun progress_fun);
-int curl_download_handle_free(curl_down_handle* down_handle);
+
+DLLEXPORT int curl_download_init();
+DLLEXPORT curl_down_handle * curl_download_handle_create(const char* url,const  char*  filename);
+DLLEXPORT int curl_download_stop(curl_down_handle* down_handle);
+DLLEXPORT int curl_download_start(curl_down_handle* down_handle,int connect_time_sec);
+DLLEXPORT int curl_download_set_complete_fun(curl_down_handle* down_handle,void* pPar,download_callback_fun complete_fun);
+DLLEXPORT int curl_download_set_error_fun(curl_down_handle* down_handle,void* pPar,download_callback_fun error_fun);
+DLLEXPORT int curl_download_set_progress_fun(curl_down_handle* down_handle,void* pPar,download_progress_fun progress_fun);
+DLLEXPORT int curl_download_handle_free(curl_down_handle* down_handle);
+
+
+
+#endif

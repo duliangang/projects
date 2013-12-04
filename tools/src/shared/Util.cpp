@@ -326,8 +326,11 @@ std::wstring ConsoleToWStr(const std::string& constr,std::wstring& wstr)
 {
 #if PLATFORM == PLATFORM_WINDOWS
 	int len=MultiByteToWideChar(CP_ACP,0,constr.c_str(),constr.length(),NULL,0); 
-	wstr.resize(len+1);
-	len=MultiByteToWideChar(CP_ACP,0,constr.c_str(),constr.length(),&(wstr[0]),len);
+	wchar_t* wcstr=new wchar_t[len+1];
+	memset(wcstr,0,(len+1)*sizeof(wchar_t));
+	len=MultiByteToWideChar(CP_ACP,0,constr.c_str(),constr.length(),wcstr,len);
+	wstr=wcstr;
+	delete[] wcstr;
 	return wstr;
 
 
@@ -335,8 +338,11 @@ std::wstring ConsoleToWStr(const std::string& constr,std::wstring& wstr)
 #else
 
 	int len=mbstowcs(NULL,constr.c_str(),0);
-	wstr.resize(len+1);
-	len=mbstowcs(&(wstr[0]),constr.c_str(),wstr.size());
+	wchar_t wcstr=new wchar_t[len+1];
+	memset(wcstr,0,(len+1)*sizeof(wchar_t));
+	len=mbstowcs(wcstr,constr.c_str(),len+1);
+	wstr=wcstr;
+	delete[] wcstr;
 	return wstr;
 #endif
 }
@@ -345,26 +351,34 @@ std::string WStrToConsole(const std::wstring& wstr,std::string& constr)
 #if PLATFORM == PLATFORM_WINDOWS
 	
 	int len=WideCharToMultiByte(CP_ACP,0,wstr.c_str(),wstr.length(),NULL,0,NULL,NULL); 
-	constr.resize(len+1);
-	len=WideCharToMultiByte(CP_ACP,0,wstr.c_str(),wstr.length(),&(constr[0]),len,NULL,NULL);
+	char* cstr=new char[len+1];
+	memset(cstr,0,(len+1)*sizeof(char));
+	len=WideCharToMultiByte(CP_ACP,0,wstr.c_str(),wstr.length(),cstr,len,NULL,NULL);
+	constr=cstr;
+	delete[] cstr;
 	return constr;
 #else
 	int len =wcstombs(NULL,wstr.c_str(),0);
-	constr.resize(len+1);
-	len=wcstombs(&(constr[0]),wstr.c_str(),len);
+	char cstr=new char[len+1];
+	memset(cstr,0,(len+1)*sizeof(char));
+	//constr.resize(len+1);
+	len=wcstombs(cstr,wstr.c_str(),len+1);
+	constr=cstr;
+	delete[] cstr;
 	return constr;
 #endif
 }
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr)
 {
 #if PLATFORM == PLATFORM_WINDOWS
+	if(utf8str.empty())return true;
     std::wstring wstr;
     if (!Utf8toWStr(utf8str, wstr))
         return false;
 
-    conStr.resize(wstr.size(),0);
-
-    CharToOemBuffW(&wstr[0], &conStr[0], wstr.size());
+    WStrToConsole(wstr,conStr);
+	return true;
+   
 #else
     // not implemented yet
     conStr = utf8str;
@@ -377,8 +391,7 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str)
 {
 #if PLATFORM == PLATFORM_WINDOWS
     std::wstring wstr;
-    wstr.resize(conStr.size(),0);
-    OemToCharBuffW(&conStr[0], &wstr[0], conStr.size());
+    ConsoleToWStr(conStr,wstr);
 
     return WStrToUtf8(wstr, utf8str);
 #else
@@ -390,6 +403,7 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str)
 
 bool Utf8FitTo(const std::string& str, std::wstring search)
 {
+	if(str.empty())return true;
     std::wstring temp;
 
     if (!Utf8toWStr(str, temp))

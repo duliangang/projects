@@ -1,0 +1,149 @@
+
+###################################################################################################
+#
+#  LOGGING SYSTEM SETTINGS
+#
+#  Appender config values: Given a appender "name"
+#    Appender.name
+#        Description: Defines 'where to log'
+#        Format:      Type,LogLevel,Flags,optional1,optional2,optional3
+#
+#                     Type
+#                         0 - (None)
+#                         1 - (Console)
+#                         2 - (File)
+#                         3 - (DB not use)
+#
+#                     LogLevel
+#                         0 - (Disabled)
+#                         1 - (Trace)
+#                         2 - (Debug)
+#                         3 - (Info)
+#                         4 - (Warn)
+#                         5 - (Error)
+#                         6 - (Fatal)
+#
+#                     Flags:
+#                         0 - None
+#                         1 - Prefix Timestamp to the text
+#                         2 - Prefix Log Level to the text
+#                         4 - Prefix Log Filter type to the text
+#                         8 - Append timestamp to the log file name. Format: YYYY-MM-DD_HH-MM-SS (Only used with Type = 2)
+#                        16 - Make a backup of existing file before overwrite (Only used with Mode = w)
+#
+#                     Colors (read as optional1 if Type = Console)
+#                         Format: "fatal error warn info debug trace"
+#                         0 - BLACK
+#                         1 - RED
+#                         2 - GREEN
+#                         3 - BROWN
+#                         4 - BLUE
+#                         5 - MAGENTA
+#                         6 - CYAN
+#                         7 - GREY
+#                         8 - YELLOW
+#                         9 - LRED
+#                        10 - LGREEN
+#                        11 - LBLUE
+#                        12 - LMAGENTA
+#                        13 - LCYAN
+#                        14 - WHITE
+#                         Example: "13 11 9 5 3 1"
+#
+#                     File: Name of the file (read as optional1 if Type = File)
+#                         Allows to use one "%s" to create dynamic files
+#
+#                     Mode: Mode to open the file (read as optional2 if Type = File)
+#                          a - (Append)
+#                          w - (Overwrite)
+#
+#                     MaxFileSize: Maximum file size of the log file before creating a new log file
+#                     (read as optional3 if Type = File)
+#                         Size is measured in bytes expressed in a 64-bit unsigned integer.
+#                         Maximum value is 4294967295 (4 gb). Leave blank for no limit.
+#                         NOTE: Does not work with dynamic filenames.
+#                         Example:  536870912 (512 mb)
+#
+
+#Appender.Console=1,3,0
+#Appender.Server=2,2,0,Server.log,w
+#Appender.GM=2,2,0,GM.log
+#Appender.DBErrors=2,2,0,DBErrors.log
+#Appender.Char=2,2,0,Char.log,w
+#Appender.RA=2,2,0,RA.log
+#Appender.Warden=2,4,0,Warden.log
+#Appender.Chat=2,2,0,Chat.log
+#Appender.CharDump=2,2,0,%s.log
+#Appender.Arenas=2,2,0,Arena.log
+#Appender.SQLDev=2,2,0,SQLDev.log
+#Appender.SQLDriver=2,2,0,SQLDriver.log
+Appender.Console=1,1,0
+#Appender.Service=2,1,23,Service.log,w
+#Appender.Display=2,2,0,Display.log,w
+#Appender.Application=2,2,0,htupdate.log,w
+#Appender.DLL=2,2,7,dllDriver.log,a
+Appender.Curl=2,1,15,curl.log,w
+#    Appenders
+#        Description: List of Appenders to read from config
+#                     (Using spaces as separator).
+#        Default:     "Console Server GM DBErrors Char RA Warden Chat"
+
+Appenders= Console Curl
+
+#  Logger config values: Given a logger "name"
+#    Logger.name
+#        Description: Defines 'What to log'
+#        Format:      Type,LogLevel,AppenderList,
+#                     Type
+#                    	  0 - ≤‚ ‘ Console
+#												1 - ≤‚ ‘ Service
+#												2 - ≤‚ ‘ Display
+#                       3 - ≤‚ ‘ Application
+#                       4 - ≤‚ ‘ DLL
+#                       5 -  0+1
+#                       6 -  2+3
+#                       7 -  4+5
+#                     LogLevel
+#                         0 - (Disabled)
+#                         1 - (Trace)
+#                         2 - (Debug)
+#                         3 - (Info)
+#                         4 - (Warn)
+#                         5 - (Error)
+#                         6 - (Fatal)
+#
+#                     AppenderList: List of appenders linked to logger
+#                     (Using spaces as separator).
+#
+
+#Logger.Root=0,5,Console Server
+#Logger.Chat=22,2,Chat
+#Logger.DBErrors=26,5,Console Server DBErrors
+#Logger.GM=27,3,Console Server GM
+#Logger.RA=28,3,RA
+#Logger.Warden=29,4,Warden
+#Logger.WorldServer=31,3,Console Server
+#Logger.Character=34,3,Char
+#Logger.Arenas=35,3,Arenas
+#Logger.SQLDriver=36,5,SQLDriver
+#Logger.SQLDev=37,3,SQLDev
+#Logger.CharDump=38,3,CharDump
+#Logger.Load=40,3,Console Server
+#Logger.Opcodes=41,6,Console Server
+
+Logger.CurlRet     =0,1,Curl Console
+Logger.CurlURL     =1,1,Curl Console
+Logger.CurlSend    =2,1,Curl Console
+Logger.CurlPost    =3,1,Curl Console
+Logger.CurlSet     =4,1,Curl Console
+Logger.CurlRecv    =5,1,Curl Console
+Logger.CurlHead    =6,1,Curl Console
+Logger.CurlDown    =7,1,Curl Console
+#
+#    Loggers
+#        Description: List of Loggers to read from config
+#                     (Using spaces as separator).
+#        Default:     "Root Chat DBErrors GM RA Warden Character Load"
+
+#Loggers=Root Chat DBErrors GM RA Warden Character Load WorldServer Opcodes
+Loggers=CurlRet CurlURL CurlSend CurlPost CurlSet CurlRecv CurlHead CurlDown

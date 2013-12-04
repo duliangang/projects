@@ -1,8 +1,8 @@
-//#include "down.h"
-//#include "curl/curl.h"
-//#include "shared/Convert.h"
-//#include "shared/Util.h"
-//#include <assert.h>
+#include "down.h"
+#include "curl/curl.h"
+#include "shared/Convert.h"
+#include "shared/Util.h"
+#include <assert.h>
 //#pragma comment(lib,"libcurl.lib")
 //#pragma comment ( lib, "ws2_32.lib" )
 //#pragma comment ( lib, "winmm.lib" )
@@ -105,18 +105,23 @@
 //	std::string level="5";
 //	std::string progid="1000";
 //	std::string prouser="jingww";
-//
-//   curl_add_send_data("p1",version);
-//   curl_add_send_data("p2",straddr);
-//   curl_add_send_data("p3",cmac);
-//   curl_add_send_data("p4",os);
-//   curl_add_send_data("p5",level);
-//   curl_add_send_data("p10",option);
-//   curl_add_send_data("p100",progid);
-//   curl_add_send_data("p101",prouser);
+//	curl_http_handle* handle= curl_http_create();
+//   curl_add_send_data(handle,"p1",version.c_str());
+//   curl_add_send_data(handle,"p2",straddr.c_str());
+//   curl_add_send_data(handle,"p3",cmac.c_str());
+//   curl_add_send_data(handle,"p4",os.c_str());
+//   curl_add_send_data(handle,"p5",level.c_str());
+//   curl_add_send_data(handle,"p10",option.c_str());
+//   curl_add_send_data(handle,"p100",progid.c_str());
+//   curl_add_send_data(handle,"p101",prouser.c_str());
 //   std::vector<char> result;
-//   int retval=curl_send_data("http://10.3.253.81:8080/htupdate/htupdate",result,500);
-//   if(retval!=0)
+//   int retval=curl_get_data_from_url(handle,"http://www.baidu.com/s?tn=baiduhome_pg&ie=utf-8&bs=baidu+get&f=8&rsv_bp=1&rsv_spt=1&wd=http+get+post+&rsv_sug3=17&rsv_sug1=15&rsv_sug4=439&rsv_sug=0&inputT=4664",result,500);
+//   
+//   std::string test_str(result.begin(),result.end());
+//	std::string constr;
+//	utf8ToConsole(test_str,constr);
+//	printf("%s",constr.c_str());
+//   if(retval!=200)
 //   {
 //	   printf("send error");
 //   }
@@ -124,6 +129,7 @@
 //   {
 //	   printf("send succese");
 //   }
+//   curl_http_free(handle);
 //   curl_global_cleanup();
 //   return 0;
 //}
