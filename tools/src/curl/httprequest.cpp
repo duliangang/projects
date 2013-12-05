@@ -88,6 +88,7 @@ public:
 			m_result.clear();
 			return code;
 	}
+
 	int curl_send_data(std::string url,std::vector<char>& result,int timeoutSec)
 	{
 		curl_download_init();

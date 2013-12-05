@@ -23,7 +23,7 @@ struct curl_down_handle;
 typedef int (*download_callback_fun)(void* pPar,curl_down_handle* complete_handle);
 typedef int (*download_progress_fun)(void* pPar,unsigned int totalsize,unsigned int nowsize);
 
-DLLEXPORT curl_http_handle* _curl_http_create();
+DLLEXPORT curl_http_handle* curl_http_create();
 DLLEXPORT void curl_http_free(curl_http_handle* handle);
 DLLEXPORT int curl_add_send_data(curl_http_handle* http_handle,const char *key,const char* var);
 DLLEXPORT void curl_clear_send_data(curl_http_handle* http_handle);
@@ -40,7 +40,7 @@ DLLEXPORT int curl_download_set_complete_fun(curl_down_handle* down_handle,void*
 DLLEXPORT int curl_download_set_error_fun(curl_down_handle* down_handle,void* pPar,download_callback_fun error_fun);
 DLLEXPORT int curl_download_set_progress_fun(curl_down_handle* down_handle,void* pPar,download_progress_fun progress_fun);
 DLLEXPORT int curl_download_handle_free(curl_down_handle* down_handle);
-
+DLLEXPORT void curl_easy_escape_skip_chars(std::string& escape_str,const char* _skip_chars);
 
 
 #endif

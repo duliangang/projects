@@ -1,4 +1,5 @@
 #include "down.h"
+#include <map>
 #include <stdint.h>
 #include <stdlib.h>
 #include <io.h>
@@ -40,7 +41,7 @@ private:
 	{
 		double downloadFileLenth = 0;
 		CURL *handle = curl_easy_init();
-		curl_easy_setopt(handle, CURLOPT_URL, m_url.c_str());
+		curl_easy_setopt(handle,CURLOPT_URL,m_url.c_str());
 		curl_easy_setopt(handle, CURLOPT_HEADER, 1);    //只需要header头
 		curl_easy_setopt(handle, CURLOPT_NOBODY, 1);    //不需要body
 		m_retCode =curl_easy_perform(handle);
@@ -184,6 +185,9 @@ private:
 		curl_download* down=(curl_download*)downclass;
 		return down->_process_data(buffer,size,nmemb);
 	}
+	
+
+	
 	 long  GetLocalFileLength()
 	{
 		FILE* fp=fopen(m_filename.c_str(),"rb");
@@ -194,6 +198,7 @@ private:
 		return length;
 	}
 public:
+	
 	curl_download(const std::string& url,const std::string& filename):m_complete_par(NULL),m_error_par(NULL),m_resumeBrokenDown(true)\
 		,m_complete_fun(NULL),m_error_fun(NULL),m_bstop(false),m_progress_fun(0),m_progress_par(NULL),m_localFile(NULL),m_localcfgFile(NULL)\
 		,m_notdeferror(1)
@@ -305,12 +310,52 @@ public:
 		return CURLE_OK;
 	}
 };
+std::string stringReplace(const std::string& input,
+	const std::string& find,
+	const std::string& replaceWith)
+{
+	std::string strOut(input);
+	int curPos = 0;
 
+	int pos;
+	while((pos = strOut.find(find, curPos)) != std::string::npos)
+	{
+		// 一次替换
+		strOut.replace(pos, find.size(), replaceWith);
+		// 防止循环替换!!
+		curPos = pos + replaceWith.size();
+	}
+	return strOut;
+}
+void curl_easy_escape_skip_chars(std::string& escape_str,const char* _skip_chars)
+{
+	CURL *handle = curl_easy_init();
+	std::string skip_chars=_skip_chars;
+	std::map<std::string,std::string> skip_list;
+	for (int i=0;i!=skip_chars.size();i++)
+	{
+		char tmp[2];
+		tmp[0]=skip_chars[i];
+		tmp[1]=0;
+		skip_list.insert(make_pair(curl_easy_escape(handle,tmp,1),tmp));
+	}
+	std::string escape=curl_easy_escape(handle,escape_str.c_str(),escape_str.length());
+	for (std::map<std::string,std::string>::iterator itr=skip_list.begin();itr!=skip_list.end();++itr)
+	{
+		escape=stringReplace(escape,itr->first,itr->second);
+	}
+	escape_str=escape;
+	curl_easy_cleanup(handle);
+	return ;
+}
 
 
 curl_down_handle * curl_download_handle_create(const char* url,const  char*  filename)
 {
-	curl_download* handle=new curl_download(url,filename);
+	curl_download_init();
+	std::string m_url=url;
+	curl_easy_escape_skip_chars(m_url,"/:");
+	curl_download* handle=new curl_download(m_url,filename);
 	return (curl_down_handle*)handle;
 }
 int curl_download_stop(curl_down_handle* down_handle)
