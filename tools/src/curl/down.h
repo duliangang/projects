@@ -27,6 +27,9 @@ DLLEXPORT curl_http_handle* curl_http_create();
 DLLEXPORT void curl_http_free(curl_http_handle* handle);
 DLLEXPORT int curl_add_send_data(curl_http_handle* http_handle,const char *key,const char* var);
 DLLEXPORT void curl_clear_send_data(curl_http_handle* http_handle);
+DLLEXPORT int  curl_send_data(curl_http_handle* http_handle,const char* url,char* result,int* resultsize,int timeoutSec);
+DLLEXPORT int curl_get_data_from_url(curl_http_handle* http_handle,const char* url,char* result,int* resultsize,int timeoutSec);
+
 DLLEXPORT int  curl_send_data(curl_http_handle* http_handle,std::string url,std::vector<char>& result,int timeoutSec);
 DLLEXPORT int curl_get_data_from_url(curl_http_handle* http_handle,std::string url,std::vector<char>& result,int timeoutSec);
 

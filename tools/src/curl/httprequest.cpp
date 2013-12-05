@@ -13,7 +13,15 @@ class httprequest
 	};
 	std::vector<post_list> m_sendlist;
 	std::string  m_result;
+	std::vector<char* > m_resouce;
 public:
+	~httprequest()
+	{
+		for (int i=0;i!=m_resouce.size();i++)
+		{
+			delete[] m_resouce[i];
+		}
+	}
 	static size_t post_recv(void *ptr, size_t size, size_t nmemb, void *userp)
 	{
 		assert(userp!=NULL);
@@ -49,7 +57,17 @@ public:
 		m_sendlist.push_back(_senddata);
 		return CURLE_OK;
 	}
-	int curl_get_data(std::string url,std::vector<char>& result,int timeoutSec)
+
+	int curl_get_data(std::string url, char* result,int* resultsize,int timeoutSec)
+	{
+		std::vector<char> _result;
+		int ret=_curl_get_data(url,_result,timeoutSec);
+		result=new char[_result.size()];
+		m_resouce.push_back(result);
+		*resultsize=_result.size();
+		return ret;
+	}
+	int _curl_get_data(std::string url,std::vector<char>& result,int timeoutSec)
 	{
 		curl_download_init();
 		CURLcode retcode;
@@ -88,8 +106,16 @@ public:
 			m_result.clear();
 			return code;
 	}
-
-	int curl_send_data(std::string url,std::vector<char>& result,int timeoutSec)
+	int  curl_send_data(std::string url,char* result,int* resultsize,int timeoutSec)
+	{
+		std::vector<char> _result;
+		int ret=_curl_send_data(url,_result,timeoutSec);
+		result=new char[_result.size()];
+		m_resouce.push_back(result);
+		*resultsize=_result.size();
+		return ret;
+	}
+	int _curl_send_data(std::string url,std::vector<char>& result,int timeoutSec)
 	{
 		curl_download_init();
 		CURLcode retcode;
@@ -167,17 +193,18 @@ void curl_clear_send_data(curl_http_handle* http_handle)
 	httprequest* req=(httprequest*)http_handle;
 	return req->curl_clear_send_data();
 }
-int  curl_send_data(curl_http_handle* http_handle,std::string url,std::vector<char>& result,int timeoutSec)
+
+int  curl_send_data(curl_http_handle* http_handle,const char* url,char* result,int* resultsize,int timeoutSec)
 {
 	curl_download_init();
 	assert(http_handle!=NULL);
 	httprequest* req=(httprequest*)http_handle;
-	return req->curl_send_data(url,result,timeoutSec);
+	return req->curl_send_data(url,result,resultsize,timeoutSec);
 }
-int curl_get_data_from_url(curl_http_handle* http_handle,std::string url,std::vector<char>& result,int timeoutSec)
+int curl_get_data_from_url(curl_http_handle* http_handle,const char* url,char* result,int* resultsize,int timeoutSec)
 {
 	curl_download_init();
 	assert(http_handle!=NULL);
 	httprequest* req=(httprequest*)http_handle;
-	return req->curl_get_data(url,result,timeoutSec);
+	return req->curl_get_data(url,result,resultsize,timeoutSec);
 }
