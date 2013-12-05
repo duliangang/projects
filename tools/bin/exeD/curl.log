@@ -1,0 +1,34 @@
+2013-12-04_20:29:20 TRACE [CurlDown] 文件G:\testdown\htup date.war开始下载
+2013-12-04_20:29:20 TRACE [CurlDown] 读取本地文件信息:文件:G:\testdown\htup date.war.td.cfd
+2013-12-04_20:29:20 TRACE [CurlDown] 文件G:\testdown\htup date.war本地缓存信息:大小0,总大小1645984
+2013-12-04_20:29:20 TRACE [CurlDown] 缓存文件大小为0
+2013-12-04_20:29:20 DEBUG [CurlDown] 下载文件G:\testdown\htup date.war结束，关闭文件
+2013-12-04_20:30:06 TRACE [CurlDown] 文件G:\testdown\htup date.war开始下载
+2013-12-04_20:31:22 TRACE [CurlDown] 读取本地文件信息:文件:G:\testdown\htup date.war.td.cfd
+2013-12-04_20:35:14 TRACE [CurlDown] 文件G:\testdown\htup date.war开始下载
+2013-12-04_20:35:14 TRACE [CurlDown] 读取本地文件信息:文件:G:\testdown\htup date.war.td.cfd
+2013-12-04_20:35:14 TRACE [CurlDown] 文件G:\testdown\htup date.war本地缓存信息:大小0,总大小1645984
+2013-12-04_20:35:14 TRACE [CurlDown] 缓存文件大小为0
+2013-12-04_20:41:06 TRACE [CurlDown] 文件G:\testdown\htup date.war开始下载
+2013-12-04_20:41:06 TRACE [CurlDown] 读取本地文件信息:文件:G:\testdown\htup date.war.td.cfd
+2013-12-04_20:41:06 TRACE [CurlDown] 文件G:\testdown\htup date.war本地缓存信息:大小0,总大小1645984
+2013-12-04_20:41:06 TRACE [CurlDown] 缓存文件大小为0
+2013-12-04_20:41:12 DEBUG [CurlDown] 下载文件G:\testdown\htup date.war结束，关闭文件
+2013-12-04_20:41:51 TRACE [CurlDown] 文件G:\testdown\htup date.war开始下载
+2013-12-04_20:41:51 DEBUG [CurlDown] 从http://10.3.253.82/rsync/HT-Security/HT_UPDATE/1.0.1/htup%20date.war下载的文件G:\testdown\htup date.war已存在
+2013-12-04_20:41:51 DEBUG [CurlDown] 原文件G:\testdown\htup date.war重命名为G:\testdown\htup date.war._save0
+2013-12-04_20:41:51 TRACE [CurlDown] 读取本地文件信息:文件:G:\testdown\htup date.war.td.cfd
+2013-12-04_20:41:51 TRACE [CurlDown] 文件G:\testdown\htup date.war本地缓存信息:大小0,总大小1645984
+2013-12-04_20:41:51 TRACE [CurlDown] 缓存文件大小为0
+2013-12-04_20:41:52 DEBUG [CurlDown] 下载文件G:\testdown\htup date.war结束，关闭文件
+2013-12-04_20:41:55 TRACE [CurlDown] 文件G:\testdown\htup date.war开始下载
+2013-12-04_20:41:56 DEBUG [CurlDown] 从http://10.3.253.82/rsync/HT-Security/HT_UPDATE/1.0.1/htup%20date.war下载的文件G:\testdown\htup date.war已存在
+2013-12-04_20:41:56 DEBUG [CurlDown] 原文件G:\testdown\htup date.war重命名为G:\testdown\htup date.war._save1
+2013-12-04_20:41:56 TRACE [CurlDown] 读取本地文件信息:文件:G:\testdown\htup date.war.td.cfd
+2013-12-04_20:41:56 TRACE [CurlDown] 文件G:\testdown\htup date.war本地缓存信息:大小0,总大小1645984
+2013-12-04_20:41:56 TRACE [CurlDown] 缓存文件大小为0
+2013-12-04_20:41:58 TRACE [CurlDown] 文件G:\testdown\htup date.war开始下载
+2013-12-04_20:41:58 TRACE [CurlDown] 读取本地文件信息:文件:G:\testdown\htup date.war.td.cfd
+2013-12-04_20:41:58 TRACE [CurlDown] 文件G:\testdown\htup date.war本地缓存信息:大小1338543,总大小1645984
+2013-12-04_20:41:58 TRACE [CurlDown] 缓存文件大小为1645984
+2013-12-04_20:41:58 DEBUG [CurlDown] 下载文件G:\testdown\htup date.war结束，关闭文件

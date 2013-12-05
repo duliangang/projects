@@ -82,7 +82,7 @@ Appender.Console=1,1,0
 #Appender.Display=2,2,0,Display.log,w
 #Appender.Application=2,2,0,htupdate.log,w
 #Appender.DLL=2,2,7,dllDriver.log,a
-Appender.Curl=2,1,15,curl.log,w
+Appender.Curl=2,1,7,curl.log,w
 #    Appenders
 #        Description: List of Appenders to read from config
 #                     (Using spaces as separator).
