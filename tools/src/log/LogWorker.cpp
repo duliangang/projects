@@ -13,21 +13,19 @@ int LogOperation::call()
 }
 
 LogWorker::LogWorker()
-	:m_queue()
 {
-	open();
+	
 }
 
 LogWorker::~LogWorker()
 {
 	m_queue.destory();
-	join();
 }
 
-int LogWorker::enqueue(LogOperation* op)
+bool LogWorker::enqueue(LogOperation* op)
 {
 	 m_queue.enqueue(op);
-	 return 0;
+	 return true;
 }
 
 void LogWorker::svc()
@@ -35,12 +33,11 @@ void LogWorker::svc()
 	while (1)
 	{
 		LogOperation* request;
-		if (m_queue.dequeue(request) !=0)
+		if (!m_queue.dequeue(request))
 			break;
 
 		request->call();
 		delete request;
 	}
-
 	return ;
 }

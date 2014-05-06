@@ -1,8 +1,6 @@
 #ifndef LOGWORKER_H
 #define LOGWORKER_H
-#include "../thread/base.h"
-#include "../thread/Msg_Queue_Ex.h"
-#include "../thread/apr/apr_base.h"
+#include "BlockQueue.h"
 class Logger;
 struct LogMessage;
 
@@ -26,17 +24,17 @@ protected:
 
 
 
-class LogWorker: protected Task_Base
+class LogWorker
 {
 public:
 	LogWorker();
 	~LogWorker();
 
-	int enqueue(LogOperation *op);
-
-private:
+	bool enqueue(LogOperation *op);
 	virtual void svc();
-	Msg_Queue<LogOperation,Null_Mutex> m_queue;
+private:
+	
+	BlockQueue<LogOperation*> m_queue;
 };
 
 #endif
