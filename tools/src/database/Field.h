@@ -1,28 +1,11 @@
-/*
- * Copyright (C) 2008-2013 TrinityCore <http://www.trinitycore.org/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 
 #ifndef _FIELD_H
 #define _FIELD_H
-
-#include "Common.h"
-#include "Log.h"
-
+#include "com.h"
+#ifdef _WIN32
+#include <WinSock2.h>
+#endif
 #include <mysql.h>
-
 class Field
 {
     friend class ResultSet;
@@ -40,10 +23,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_TINY))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt8() on non-tinyint field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt8() on non-tinyint field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -58,10 +41,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_TINY))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt8() on non-tinyint field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt8() on non-tinyint field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -76,10 +59,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_SHORT) && !IsType(MYSQL_TYPE_YEAR))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt16() on non-smallint field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt16() on non-smallint field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -94,10 +77,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_SHORT) && !IsType(MYSQL_TYPE_YEAR))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt16() on non-smallint field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt16() on non-smallint field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -112,10 +95,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_INT24) && !IsType(MYSQL_TYPE_LONG))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt32() on non-(medium)int field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt32() on non-(medium)int field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -130,10 +113,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_INT24) && !IsType(MYSQL_TYPE_LONG))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt32() on non-(medium)int field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt32() on non-(medium)int field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -148,10 +131,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_LONGLONG) && !IsType(MYSQL_TYPE_BIT))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt64() on non-bigint field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetUInt64() on non-bigint field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -166,10 +149,10 @@ class Field
             if (!data.value)
                 return 0;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_LONGLONG) && !IsType(MYSQL_TYPE_BIT))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt64() on non-bigint field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetInt64() on non-bigint field. Using type: %s.", FieldTypeToString(data.type));
                 return 0;
             }
             #endif
@@ -184,10 +167,10 @@ class Field
             if (!data.value)
                 return 0.0f;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_FLOAT))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetFloat() on non-float field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetFloat() on non-float field. Using type: %s.", FieldTypeToString(data.type));
                 return 0.0f;
             }
             #endif
@@ -202,10 +185,10 @@ class Field
             if (!data.value)
                 return 0.0f;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (!IsType(MYSQL_TYPE_DOUBLE))
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Warning: GetDouble() on non-double field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Warning: GetDouble() on non-double field. Using type: %s.", FieldTypeToString(data.type));
                 return 0.0f;
             }
             #endif
@@ -220,10 +203,10 @@ class Field
             if (!data.value)
                 return NULL;
 
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             if (IsNumeric())
             {
-                TC_LOG_WARN(LOG_FILTER_SQL, "Error: GetCString() on numeric field. Using type: %s.", FieldTypeToString(data.type));
+                _LOG_WARN(LOG_FILTER_SQL, "Error: GetCString() on numeric field. Using type: %s.", FieldTypeToString(data.type));
                 return NULL;
             }
             #endif
@@ -327,7 +310,7 @@ class Field
                 MYSQL_TYPE_SET:
                 */
                 default:
-                    TC_LOG_WARN(LOG_FILTER_SQL, "SQL::SizeForType(): invalid field type %u", uint32(field->type));
+                    _LOG_WARN(LOG_FILTER_SQL, "SQL::SizeForType(): invalid field type %u", uint32(field->type));
                     return 0;
             }
         }
@@ -349,7 +332,7 @@ class Field
         }
 
     private:
-        #ifdef TRINITY_DEBUG
+        #ifdef _DEBUG
         static char const* FieldTypeToString(enum_field_types type)
         {
             switch (type)

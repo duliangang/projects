@@ -1,28 +1,13 @@
-/*
- * Copyright (C) 2008-2013 TrinityCore <http://www.trinitycore.org/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#include <ace/Activation_Queue.h>
-
-#include "DatabaseWorkerPool.h"
-#include "Transaction.h"
-#include "Util.h"
 
 #ifndef _MYSQLCONNECTION_H
 #define _MYSQLCONNECTION_H
+#include "com.h"
+#include "../shared/Util.h"
+#include <map>
+#include "BlockQueue.h"
+
+#include "QueryResult.h"
+#include "Transaction.h"
 
 class DatabaseWorker;
 class PreparedStatement;
@@ -41,7 +26,7 @@ struct MySQLConnectionInfo
     MySQLConnectionInfo() {}
     MySQLConnectionInfo(const std::string& infoString)
     {
-        Tokenizer tokens(infoString, ';');
+        MTokenizer tokens(infoString, ';');
 
         if (tokens.size() != 5)
             return;
@@ -71,7 +56,7 @@ class MySQLConnection
 
     public:
         MySQLConnection(MySQLConnectionInfo& connInfo);                               //! Constructor for synchronous connections.
-        MySQLConnection(ACE_Activation_Queue* queue, MySQLConnectionInfo& connInfo);  //! Constructor for asynchronous connections.
+        MySQLConnection(BlockQueue<SQLOperation*>* queue, MySQLConnectionInfo& connInfo);  //! Constructor for asynchronous connections.
         virtual ~MySQLConnection();
 
         virtual bool Open();
@@ -100,13 +85,13 @@ class MySQLConnection
         {
             /// Tries to acquire lock. If lock is acquired by another thread
             /// the calling parent will just try another connection
-            return m_Mutex.tryacquire() != -1;
+            return m_Mutex.try_lock();
         }
 
         void Unlock()
         {
             /// Called by parent databasepool. Will let other threads access this connection
-            m_Mutex.release();
+            m_Mutex.unlock();
         }
 
         MYSQL* GetHandle()  { return m_Mysql; }
@@ -126,12 +111,12 @@ class MySQLConnection
         bool _HandleMySQLErrno(uint32 errNo);
 
     private:
-        ACE_Activation_Queue* m_queue;                      //! Queue shared with other asynchronous connections.
+        BlockQueue<SQLOperation*>* m_queue;                      //! Queue shared with other asynchronous connections.
         DatabaseWorker*       m_worker;                     //! Core worker task.
         MYSQL *               m_Mysql;                      //! MySQL Handle.
         MySQLConnectionInfo&  m_connectionInfo;             //! Connection info (used for logging)
         ConnectionFlags       m_connectionFlags;            //! Connection flags (for preparing relevant statements)
-        ACE_Thread_Mutex      m_Mutex;
+        boost::mutex m_Mutex;
 };
 
 #endif

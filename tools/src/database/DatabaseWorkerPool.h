@@ -1,39 +1,12 @@
-/*
- * Copyright (C) 2008-2013 TrinityCore <http://www.trinitycore.org/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
-
 #ifndef _DATABASEWORKERPOOL_H
 #define _DATABASEWORKERPOOL_H
 
-#include <ace/Thread_Mutex.h>
-
-#include "Common.h"
-#include "Callback.h"
-#include "MySQLConnection.h"
-#include "Transaction.h"
-#include "DatabaseWorker.h"
-#include "PreparedStatement.h"
-#include "Log.h"
-#include "QueryResult.h"
-#include "QueryHolder.h"
-#include "AdhocStatement.h"
-
 #define MIN_MYSQL_SERVER_VERSION 50100u
 #define MIN_MYSQL_CLIENT_VERSION 50100u
-
+#include "SQLOperation.h"
+#include "MySQLConnection.h"
+#include "BlockQueue.h"
+#include "com.h"
 class PingOperation : public SQLOperation
 {
     //! Operation for idle delaythreads
@@ -50,7 +23,7 @@ class DatabaseWorkerPool
     public:
         /* Activity state */
         DatabaseWorkerPool() :
-        _queue(new ACE_Activation_Queue())
+        _queue(new BlockQueue<SQLOperation*>())
         {
             memset(_connectionCount, 0, sizeof(_connectionCount));
             _connections.resize(IDX_SIZE);
@@ -68,7 +41,7 @@ class DatabaseWorkerPool
             bool res = true;
             _connectionInfo = MySQLConnectionInfo(infoString);
 
-            TC_LOG_INFO(LOG_FILTER_SQL_DRIVER, "Opening DatabasePool '%s'. Asynchronous connections: %u, synchronous connections: %u.",
+            _LOG_INFO(LOG_FILTER_SQL_DRIVER, "Opening DatabasePool '%s'. Asynchronous connections: %u, synchronous connections: %u.",
                 GetDatabaseName(), async_threads, synch_threads);
 
             //! Open asynchronous connections (delayed operations)
@@ -94,22 +67,22 @@ class DatabaseWorkerPool
             }
 
             if (res)
-                TC_LOG_INFO(LOG_FILTER_SQL_DRIVER, "DatabasePool '%s' opened successfully. %u total connections running.", GetDatabaseName(),
+                _LOG_INFO(LOG_FILTER_SQL_DRIVER, "DatabasePool '%s' opened successfully. %u total connections running.", GetDatabaseName(),
                     (_connectionCount[IDX_SYNCH] + _connectionCount[IDX_ASYNC]));
             else
-                TC_LOG_ERROR(LOG_FILTER_SQL_DRIVER, "DatabasePool %s NOT opened. There were errors opening the MySQL connections. Check your SQLDriverLogFile "
+                _LOG_ERROR(LOG_FILTER_SQL_DRIVER, "DatabasePool %s NOT opened. There were errors opening the MySQL connections. Check your SQLDriverLogFile "
                     "for specific errors.", GetDatabaseName());
             return res;
         }
 
         void Close()
         {
-            TC_LOG_INFO(LOG_FILTER_SQL_DRIVER, "Closing down DatabasePool '%s'.", GetDatabaseName());
+            _LOG_INFO(LOG_FILTER_SQL_DRIVER, "Closing down DatabasePool '%s'.", GetDatabaseName());
 
             //! Shuts down delaythreads for this connection pool by underlying deactivate().
             //! The next dequeue attempt in the worker thread tasks will result in an error,
             //! ultimately ending the worker thread task.
-            _queue->queue()->close();
+            _queue->destory();
 
             for (uint8 i = 0; i < _connectionCount[IDX_ASYNC]; ++i)
             {
@@ -120,7 +93,7 @@ class DatabaseWorkerPool
                 t->Close();         //! Closes the actualy MySQL connection.
             }
 
-            TC_LOG_INFO(LOG_FILTER_SQL_DRIVER, "Asynchronous connections on DatabasePool '%s' terminated. Proceeding with synchronous connections.",
+            _LOG_INFO(LOG_FILTER_SQL_DRIVER, "Asynchronous connections on DatabasePool '%s' terminated. Proceeding with synchronous connections.",
                 GetDatabaseName());
 
             //! Shut down the synchronous connections
@@ -130,10 +103,9 @@ class DatabaseWorkerPool
             for (uint8 i = 0; i < _connectionCount[IDX_SYNCH]; ++i)
                 _connections[IDX_SYNCH][i]->Close();
 
-            //! Deletes the ACE_Activation_Queue object and its underlying ACE_Message_Queue
             delete _queue;
 
-            TC_LOG_INFO(LOG_FILTER_SQL_DRIVER, "All connections on DatabasePool '%s' closed.", GetDatabaseName());
+            _LOG_INFO(LOG_FILTER_SQL_DRIVER, "All connections on DatabasePool '%s' closed.", GetDatabaseName());
         }
 
         /**
@@ -298,17 +270,17 @@ class DatabaseWorkerPool
 
         //! Enqueues a query in string format that will set the value of the QueryResultFuture return object as soon as the query is executed.
         //! The return value is then processed in ProcessQueryCallback methods.
-        QueryResultFuture AsyncQuery(const char* sql)
+        void AsyncQuery(const char* sql,BasicStatementCallbackFunc callBack)
         {
             QueryResultFuture res;
-            BasicStatementTask* task = new BasicStatementTask(sql, res);
+            BasicStatementTask* task = new BasicStatementTask(sql, callBack);
             Enqueue(task);
-            return res;         //! Actual return value has no use yet
+            return;         //! Actual return value has no use yet
         }
 
         //! Enqueues a query in string format -with variable args- that will set the value of the QueryResultFuture return object as soon as the query is executed.
         //! The return value is then processed in ProcessQueryCallback methods.
-        QueryResultFuture AsyncPQuery(const char* sql, ...)
+         void AsyncPQuery(BasicStatementCallbackFunc callBack,const char* sql, ...)
         {
             va_list ap;
             char szQuery[MAX_QUERY_LEN];
@@ -316,30 +288,28 @@ class DatabaseWorkerPool
             vsnprintf(szQuery, MAX_QUERY_LEN, sql, ap);
             va_end(ap);
 
-            return AsyncQuery(szQuery);
+            return AsyncQuery(szQuery,callBack);
         }
 
         //! Enqueues a query in prepared format that will set the value of the PreparedQueryResultFuture return object as soon as the query is executed.
         //! The return value is then processed in ProcessQueryCallback methods.
         //! Statement must be prepared with CONNECTION_ASYNC flag.
-        PreparedQueryResultFuture AsyncQuery(PreparedStatement* stmt)
+        void AsyncQuery(PreparedStatement* stmt,PreparedQueryCallBackFunc callback)
         {
-            PreparedQueryResultFuture res;
-            PreparedStatementTask* task = new PreparedStatementTask(stmt, res);
+            PreparedStatementTask* task = new PreparedStatementTask(stmt, callback);
             Enqueue(task);
-            return res;
+            return ;
         }
 
         //! Enqueues a vector of SQL operations (can be both adhoc and prepared) that will set the value of the QueryResultHolderFuture
         //! return object as soon as the query is executed.
         //! The return value is then processed in ProcessQueryCallback methods.
         //! Any prepared statements added to this holder need to be prepared with the CONNECTION_ASYNC flag.
-        QueryResultHolderFuture DelayQueryHolder(SQLQueryHolder* holder)
+        void DelayQueryHolder(SQLQueryHolder* holder,boost::function<void (SQLQueryHolder*)> callback)
         {
-            QueryResultHolderFuture res;
-            SQLQueryHolderTask* task = new SQLQueryHolderTask(holder, res);
+            SQLQueryHolderTask* task = new SQLQueryHolderTask(holder, callback);
             Enqueue(task);
-            return res;     //! Fool compiler, has no use yet
+            return;     //! Fool compiler, has no use yet
         }
 
         /**
@@ -356,22 +326,22 @@ class DatabaseWorkerPool
         //! were appended to the transaction will be respected during execution.
         void CommitTransaction(SQLTransaction transaction)
         {
-            #ifdef TRINITY_DEBUG
+            #ifdef _DEBUG
             //! Only analyze transaction weaknesses in Debug mode.
             //! Ideally we catch the faults in Debug mode and then correct them,
             //! so there's no need to waste these CPU cycles in Release mode.
             switch (transaction->GetSize())
             {
                 case 0:
-                    TC_LOG_DEBUG(LOG_FILTER_SQL_DRIVER, "Transaction contains 0 queries. Not executing.");
+                    _LOG_DEBUG(LOG_FILTER_SQL_DRIVER, "Transaction contains 0 queries. Not executing.");
                     return;
                 case 1:
-                    TC_LOG_DEBUG(LOG_FILTER_SQL_DRIVER, "Warning: Transaction only holds 1 query, consider removing Transaction context in code.");
+                    _LOG_DEBUG(LOG_FILTER_SQL_DRIVER, "Warning: Transaction only holds 1 query, consider removing Transaction context in code.");
                     break;
                 default:
                     break;
             }
-            #endif // TRINITY_DEBUG
+            #endif // _DEBUG
 
             Enqueue(new TransactionTask(transaction));
         }
@@ -516,7 +486,7 @@ class DatabaseWorkerPool
             IDX_SIZE
         };
 
-        ACE_Activation_Queue*           _queue;             //! Queue shared by async worker threads.
+         BlockQueue<SQLOperation*>*           _queue;             //! Queue shared by async worker threads.
         std::vector< std::vector<T*> >  _connections;
         uint32                          _connectionCount[2];       //! Counter of MySQL connections;
         MySQLConnectionInfo             _connectionInfo;

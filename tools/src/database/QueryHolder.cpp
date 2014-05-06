@@ -1,30 +1,12 @@
-/*
- * Copyright (C) 2008-2013 TrinityCore <http://www.trinitycore.org/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#include "MySQLConnection.h"
 #include "QueryHolder.h"
+#include "QueryResult.h"
 #include "PreparedStatement.h"
-#include "Log.h"
-
+#include "MySQLConnection.h"
 bool SQLQueryHolder::SetQuery(size_t index, const char *sql)
 {
     if (m_queries.size() <= index)
     {
-        TC_LOG_ERROR(LOG_FILTER_SQL, "Query index (%u) out of range (size: %u) for query: %s", uint32(index), (uint32)m_queries.size(), sql);
+        _LOG_ERROR(LOG_FILTER_SQL, "Query index (%u) out of range (size: %u) for query: %s", uint32(index), (uint32)m_queries.size(), sql);
         return false;
     }
 
@@ -44,7 +26,7 @@ bool SQLQueryHolder::SetPQuery(size_t index, const char *format, ...)
 {
     if (!format)
     {
-        TC_LOG_ERROR(LOG_FILTER_SQL, "Query (index: %u) is empty.", uint32(index));
+        _LOG_ERROR(LOG_FILTER_SQL, "Query (index: %u) is empty.", uint32(index));
         return false;
     }
 
@@ -56,7 +38,7 @@ bool SQLQueryHolder::SetPQuery(size_t index, const char *format, ...)
 
     if (res == -1)
     {
-        TC_LOG_ERROR(LOG_FILTER_SQL, "SQL Query truncated (and not execute) for format: %s", format);
+        _LOG_ERROR(LOG_FILTER_SQL, "SQL Query truncated (and not execute) for format: %s", format);
         return false;
     }
 
@@ -67,7 +49,7 @@ bool SQLQueryHolder::SetPreparedQuery(size_t index, PreparedStatement* stmt)
 {
     if (m_queries.size() <= index)
     {
-        TC_LOG_ERROR(LOG_FILTER_SQL, "Query index (%u) out of range (size: %u) for prepared statement", uint32(index), (uint32)m_queries.size());
+        _LOG_ERROR(LOG_FILTER_SQL, "Query index (%u) out of range (size: %u) for prepared statement", uint32(index), (uint32)m_queries.size());
         return false;
     }
 
@@ -199,7 +181,6 @@ bool SQLQueryHolderTask::Execute()
             }
         }
     }
-
-    m_result.set(m_holder);
+	m_callBack(boost::shared_ptr<SQLQueryHolder>(m_holder));
     return true;
 }

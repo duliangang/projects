@@ -1,25 +1,12 @@
-/*
- * Copyright (C) 2008-2013 TrinityCore <http://www.trinitycore.org/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 
 #ifndef _QUERYHOLDER_H
 #define _QUERYHOLDER_H
-
-#include <ace/Future.h>
-
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
+#include "SQLOperation.h"
+#include <vector>
+#include "QueryResult.h"
+#include "PreparedStatement.h"
 class SQLQueryHolder
 {
     friend class SQLQueryHolderTask;
@@ -30,7 +17,7 @@ class SQLQueryHolder
         SQLQueryHolder() {}
         ~SQLQueryHolder();
         bool SetQuery(size_t index, const char *sql);
-        bool SetPQuery(size_t index, const char *format, ...) ATTR_PRINTF(3, 4);
+        bool SetPQuery(size_t index, const char *format, ...) ;
         bool SetPreparedQuery(size_t index, PreparedStatement* stmt);
         void SetSize(size_t size);
         QueryResult GetResult(size_t index);
@@ -39,17 +26,17 @@ class SQLQueryHolder
         void SetPreparedResult(size_t index, PreparedResultSet* result);
 };
 
-typedef ACE_Future<SQLQueryHolder*> QueryResultHolderFuture;
 
+typedef  boost::function<void (boost::shared_ptr<SQLQueryHolder>) > QueryHolderCallBackFunc; 
 class SQLQueryHolderTask : public SQLOperation
 {
     private:
         SQLQueryHolder * m_holder;
-        QueryResultHolderFuture m_result;
+        QueryHolderCallBackFunc m_callBack;
 
     public:
-        SQLQueryHolderTask(SQLQueryHolder *holder, QueryResultHolderFuture res)
-            : m_holder(holder), m_result(res){};
+        SQLQueryHolderTask(SQLQueryHolder *holder,QueryHolderCallBackFunc callBack)
+            : m_holder(holder), m_callBack(callBack){};
         bool Execute();
 
 };
