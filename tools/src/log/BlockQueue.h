@@ -6,6 +6,22 @@
 #include <iostream>
 #include <stdio.h>
 
+template<class Type,bool>/*isnot pointer*/
+struct DestoryQueue
+{
+	void destory(Type& t)
+	{
+
+	}
+};
+template<class Type>/*is pointer*/
+struct DestoryQueue<Type,true>
+{
+	void destory(Type& t)
+	{
+		delete t;
+	}
+};
 template<class Type>
 class BlockQueue
 {
@@ -17,6 +33,14 @@ public:
 	~BlockQueue()
 	{
 		destory();
+		boost::mutex::scoped_lock _lock(m_mutex);
+		while(!m_queue.empty())
+		{
+			Type& res=m_queue.front();
+			m_queue.pop_front();
+			DestoryQueue<Type,boost::is_pointer<Type>::value> des;
+			des.destory(res);
+		}
 	}
 	void destory()
 	{
@@ -26,8 +50,9 @@ public:
 			if(m_isDestory)return;
 			m_isDestory=true;
 			m_cond.notify_all();
-
+			
 		}
+		
 	}
 	bool enqueue(const Type& res)
 	{
@@ -80,4 +105,5 @@ private:
 	boost::mutex  m_mutex;
 	boost::condition_variable_any m_cond;
 };
+
 #endif

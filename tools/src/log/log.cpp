@@ -7,8 +7,11 @@
 #include "LogWorker.h"
 #include "AppenderFile.h"
 #include "AppenderConsole.h"
-
-
+#ifdef _UNICODE
+#define Tokenizer WTokenizer
+#else
+#define Tokenizer MTokenizer
+#endif
 Log::Log() : worker(NULL)
 {
 	m_logsTimestamp = _T("_") + GetTimestampStr();
