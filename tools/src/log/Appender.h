@@ -40,7 +40,7 @@ const uint8_t MaxLogLevels = 6;
 
 struct LogMessage
 {
-	LogMessage(LogLevel _level, uint8_t _type, std::_tstring _text)
+	LogMessage(LogLevel _level, uint8_t _type, std::string _text)
 		: level(_level)
 		, type(_type)
 		, text(_text)
@@ -48,14 +48,13 @@ struct LogMessage
 		mtime = time(NULL);
 	}
 
-	static std::_tstring getTimeStr(time_t time);
-	std::_tstring getTimeStr();
+	static std::string getTimeStr(time_t time);
+	 std::string getTimeStr();
 
 	LogLevel level;
 	uint8_t type;
-	std::_tstring text;
-	std::_tstring prefix;
-	std::_tstring param1;
+	std::string text;
+	std::string prefix;
 	time_t mtime;
 };
 class Log;
@@ -74,8 +73,8 @@ public:
 
 	void setLogLevel(LogLevel);
 	void write(LogMessage& message);
-	static const _tchar* getLogLevelString(LogLevel level);
-	static const _tchar* getLogFilterTypeString(uint8_t type);
+	static const char* getLogLevelString(LogLevel level);
+	static const char* getLogFilterTypeString(uint8_t type);
 
 private:
 	virtual void _write(LogMessage& /*message*/) = 0;
@@ -85,7 +84,7 @@ private:
 	AppenderType type;
 	LogLevel level;
 	AppenderFlags flags;
-	static std::map<uint8_t,std::_tstring> MapLogFilterTypeString;
+	static std::map<uint8_t,std::string> MapLogFilterTypeString;
 };
 
 typedef std::map<uint8_t, Appender*> AppenderMap;

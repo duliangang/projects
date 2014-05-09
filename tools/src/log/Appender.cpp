@@ -1,12 +1,12 @@
 #include "Appender.h"
-std::_tstring LogMessage::getTimeStr(time_t time)
+std::string LogMessage::getTimeStr(time_t time)
 {
 	tm* aTm = localtime(&time);
-	_tchar buf[20];
-	_tsnprintf(buf, 20, _T("%04d-%02d-%02d_%02d:%02d:%02d"), aTm->tm_year+1900, aTm->tm_mon+1, aTm->tm_mday, aTm->tm_hour, aTm->tm_min, aTm->tm_sec);
-	return std::_tstring(buf);
+	char buf[20];
+	_snprintf(buf, 20, "%04d-%02d-%02d_%02d:%02d:%02d", aTm->tm_year+1900, aTm->tm_mon+1, aTm->tm_mday, aTm->tm_hour, aTm->tm_min, aTm->tm_sec);
+	return std::string(buf);
 }
-std::_tstring LogMessage::getTimeStr()
+std::string LogMessage::getTimeStr()
 {
 	return getTimeStr(mtime);
 }
@@ -67,8 +67,8 @@ void Appender::write(LogMessage& message)
 		if (!message.prefix.empty())
 			message.prefix.push_back(' ');
 
-		_tchar text[MAX_QUERY_LEN];
-		_tsnprintf(text, MAX_QUERY_LEN, _T("%-5s"), Appender::getLogLevelString(message.level));
+		char text[MAX_QUERY_LEN];
+		_snprintf(text, MAX_QUERY_LEN, "%-5s", Appender::getLogLevelString(message.level));
 		message.prefix.append(text);
 	}
 
@@ -77,8 +77,8 @@ void Appender::write(LogMessage& message)
 		if (!message.prefix.empty())
 			message.prefix.push_back(' ');
 
-		_tchar text[MAX_QUERY_LEN];
-		_tsnprintf(text, MAX_QUERY_LEN, _T("[%s]"), Appender::getLogFilterTypeString(message.type));
+		char text[MAX_QUERY_LEN];
+		_snprintf(text, MAX_QUERY_LEN, "[%s]", Appender::getLogFilterTypeString(message.type));
 		message.prefix.append(text);
 	}
 
@@ -89,32 +89,32 @@ void Appender::write(LogMessage& message)
 }
 
 
-const _tchar* Appender::getLogLevelString(LogLevel level)
+const char* Appender::getLogLevelString(LogLevel level)
 {
 	switch (level)
 	{
 	case LOG_LEVEL_FATAL:
-		return _T("FATAL");
+		return ("FATAL");
 	case LOG_LEVEL_ERROR:
-		return _T("ERROR");
+		return ("ERROR");
 	case LOG_LEVEL_WARN:
-		return _T("WARN");
+		return ("WARN");
 	case LOG_LEVEL_INFO:
-		return _T("INFO");
+		return ("INFO");
 	case LOG_LEVEL_DEBUG:
-		return _T("DEBUG");
+		return ("DEBUG");
 	case LOG_LEVEL_TRACE:
-		return _T("TRACE");
+		return ("TRACE");
 	default:
-		return _T("DISABLED");
+		return ("DISABLED");
 	}
 }
-std::map<uint8_t,std::_tstring> Appender::MapLogFilterTypeString;
-_tchar const* Appender::getLogFilterTypeString(uint8_t type)
+std::map<uint8_t,std::string> Appender::MapLogFilterTypeString;
+char const* Appender::getLogFilterTypeString(uint8_t type)
 {
 	if(MapLogFilterTypeString.find(type)!=MapLogFilterTypeString.end())
 	{
 		return MapLogFilterTypeString[type].c_str();
 	}
-	return _T("???");
+	return "???";
 }

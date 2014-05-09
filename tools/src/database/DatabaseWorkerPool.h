@@ -5,6 +5,10 @@
 #define MIN_MYSQL_CLIENT_VERSION 50100u
 #include "SQLOperation.h"
 #include "MySQLConnection.h"
+#include "AdhocStatement.h"
+#include "DatabaseWorker.h"
+#include "PreparedStatement.h"
+#include "QueryHolder.h"
 #include "BlockQueue.h"
 #include "com.h"
 class PingOperation : public SQLOperation
@@ -29,7 +33,6 @@ class DatabaseWorkerPool
             _connections.resize(IDX_SIZE);
 
             WPFatal(mysql_thread_safe(), "Used MySQL library isn't thread-safe.");
-            WPFatal(mysql_get_client_version() >= MIN_MYSQL_CLIENT_VERSION, "TrinityCore does not support MySQL versions below 5.1");
         }
 
         ~DatabaseWorkerPool()
@@ -50,8 +53,6 @@ class DatabaseWorkerPool
             {
                 T* t = new T(_queue, _connectionInfo);
                 res &= t->Open();
-                if (res) // only check mysql version if connection is valid
-                    WPFatal(mysql_get_server_version(t->GetHandle()) >= MIN_MYSQL_SERVER_VERSION, "TrinityCore does not support MySQL versions below 5.1");
                 _connections[IDX_ASYNC][i] = t;
                 ++_connectionCount[IDX_ASYNC];
             }
@@ -272,7 +273,6 @@ class DatabaseWorkerPool
         //! The return value is then processed in ProcessQueryCallback methods.
         void AsyncQuery(const char* sql,BasicStatementCallbackFunc callBack)
         {
-            QueryResultFuture res;
             BasicStatementTask* task = new BasicStatementTask(sql, callBack);
             Enqueue(task);
             return;         //! Actual return value has no use yet
@@ -305,7 +305,7 @@ class DatabaseWorkerPool
         //! return object as soon as the query is executed.
         //! The return value is then processed in ProcessQueryCallback methods.
         //! Any prepared statements added to this holder need to be prepared with the CONNECTION_ASYNC flag.
-        void DelayQueryHolder(SQLQueryHolder* holder,boost::function<void (SQLQueryHolder*)> callback)
+        void DelayQueryHolder(SQLQueryHolder holder,QueryHolderCallBackFunc callback)
         {
             SQLQueryHolderTask* task = new SQLQueryHolderTask(holder, callback);
             Enqueue(task);

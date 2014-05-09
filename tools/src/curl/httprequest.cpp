@@ -58,13 +58,17 @@ public:
 		return CURLE_OK;
 	}
 
-	int curl_get_data(std::string url, char* result,int* resultsize,int timeoutSec)
+	int curl_get_data(std::string url, char** result,int* resultsize,int timeoutSec)
 	{
 		std::vector<char> _result;
 		int ret=_curl_get_data(url,_result,timeoutSec);
-		result=new char[_result.size()];
-		m_resouce.push_back(result);
+		if(!_result.empty())
+		{
+		(*result)=new char[_result.size()];
+		memcpy(*result,&(_result[0]),_result.size());
+		m_resouce.push_back((*result));
 		*resultsize=_result.size();
+		}
 		return ret;
 	}
 	int _curl_get_data(std::string url,std::vector<char>& result,int timeoutSec)
@@ -106,13 +110,19 @@ public:
 			m_result.clear();
 			return code;
 	}
-	int  curl_send_data(std::string url,char* result,int* resultsize,int timeoutSec)
+	int  curl_send_data(std::string url,char** result,int* resultsize,int timeoutSec)
 	{
 		std::vector<char> _result;
 		int ret=_curl_send_data(url,_result,timeoutSec);
-		result=new char[_result.size()];
-		m_resouce.push_back(result);
-		*resultsize=_result.size();
+		if(!_result.empty())
+		{
+			(*result)=new char[_result.size()];
+
+			memcpy(*result,&(_result[0]),_result.size());
+			m_resouce.push_back((*result));
+			*resultsize=_result.size();
+		}
+		
 		return ret;
 	}
 	int _curl_send_data(std::string url,std::vector<char>& result,int timeoutSec)
@@ -194,14 +204,14 @@ void curl_clear_send_data(curl_http_handle* http_handle)
 	return req->curl_clear_send_data();
 }
 
-int  curl_send_data(curl_http_handle* http_handle,const char* url,char* result,int* resultsize,int timeoutSec)
+int  curl_send_data(curl_http_handle* http_handle,const char* url,char** result,int* resultsize,int timeoutSec)
 {
 	curl_download_init();
 	assert(http_handle!=NULL);
 	httprequest* req=(httprequest*)http_handle;
 	return req->curl_send_data(url,result,resultsize,timeoutSec);
 }
-int curl_get_data_from_url(curl_http_handle* http_handle,const char* url,char* result,int* resultsize,int timeoutSec)
+int curl_get_data_from_url(curl_http_handle* http_handle,const char* url,char** result,int* resultsize,int timeoutSec)
 {
 	curl_download_init();
 	assert(http_handle!=NULL);

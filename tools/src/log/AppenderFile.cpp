@@ -27,7 +27,7 @@ void AppenderFile::_write(LogMessage& message)
     if (dynamicName)
     {
         _tchar namebuf[DEF_PATH_MAX];
-        _tsnprintf(namebuf, DEF_PATH_MAX, filename.c_str(), message.param1.c_str());
+        _tsnprintf(namebuf, DEF_PATH_MAX, filename.c_str());
         logfile = OpenFile(namebuf, mode, backup);
     }
 
@@ -35,13 +35,9 @@ void AppenderFile::_write(LogMessage& message)
     {
 		std::string text;
 		std::string prefix;
-#ifdef _UNICODE 
-	   WStrToConsole(message.text,text);
-	   WStrToConsole(message.prefix,prefix);
-#else
+
 		text=message.text;
 		prefix=message.prefix;
-#endif 
 		fprintf(logfile,"%s%s",prefix.c_str(),text.c_str());
         fflush(logfile);
 
@@ -57,9 +53,17 @@ FILE* AppenderFile::OpenFile(std::_tstring const &filename, std::_tstring const 
 {
     if (mode == _T("w") && backup)
     {
-        std::_tstring newName(filename);
-        newName.push_back('.');
-        newName.append(LogMessage::getTimeStr(time(NULL)));
+		std::wstring newName(filename);
+		newName.push_back('.');
+#ifdef _UNICODE
+	std::wstring wstr;
+	ConsoleToWStr(LogMessage::getTimeStr(time(NULL)),wstr);
+	newName.append(wstr);
+#else
+	newName.append(LogMessage::getTimeStr(time(NULL)));
+#endif
+        
+        
         _trename(filename.c_str(), newName.c_str()); // no error handling... if we couldn't make a backup, just ignore
     }
     return _tfopen((logDir + filename).c_str(), mode.c_str());

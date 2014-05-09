@@ -6,11 +6,12 @@ m_conn(con),
 m_pThread(NULL)
 {
     /// Assign thread to task
-	m_pThread=new boost::thread(boost::bind(&DatabaseWorker::svc,this));
+	if(m_queue)m_pThread=new boost::thread(boost::bind(&DatabaseWorker::svc,this));
 }
 int DatabaseWorker::wait()
 {
 	if(m_pThread){m_pThread->join();}
+	return 0;
 }
 int DatabaseWorker::svc()
 {
