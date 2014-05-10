@@ -67,8 +67,8 @@ class MySQLConnection
         bool Execute(PreparedStatement* stmt);
         ResultSet* Query(const char* sql);
         PreparedResultSet* Query(PreparedStatement* stmt);
-        bool _Query(const char *sql, MYSQL_RES **pResult, MYSQL_FIELD **pFields, uint64* pRowCount, uint32* pFieldCount);
-        bool _Query(PreparedStatement* stmt, MYSQL_RES **pResult, uint64* pRowCount, uint32* pFieldCount);
+        bool _Query(const char *sql, MYSQL_RES **pResult, MYSQL_FIELD **pFields, uint64_t* pRowCount, uint32_t* pFieldCount);
+        bool _Query(PreparedStatement* stmt, MYSQL_RES **pResult, uint64_t* pRowCount, uint32_t* pFieldCount);
 
         void BeginTransaction();
         void RollbackTransaction();

@@ -61,6 +61,10 @@ template<typename T> inline T& EndianConvert(T& val)
 	}
 	return val;
 }
+template<typename T> inline T& EndianConvertReverse(T& val)
+{
+	return EndianConvert(val);
+}
 
 template<typename T> void EndianConvert(T*);         // will generate link error
 template<typename T> void EndianConvertReverse(T*);  // will generate link error

@@ -291,9 +291,7 @@ class DatabaseWorkerPool
             return AsyncQuery(szQuery,callBack);
         }
 
-        //! Enqueues a query in prepared format that will set the value of the PreparedQueryResultFuture return object as soon as the query is executed.
-        //! The return value is then processed in ProcessQueryCallback methods.
-        //! Statement must be prepared with CONNECTION_ASYNC flag.
+     
         void AsyncQuery(PreparedStatement* stmt,PreparedQueryCallBackFunc callback)
         {
             PreparedStatementTask* task = new PreparedStatementTask(stmt, callback);
@@ -301,15 +299,12 @@ class DatabaseWorkerPool
             return ;
         }
 
-        //! Enqueues a vector of SQL operations (can be both adhoc and prepared) that will set the value of the QueryResultHolderFuture
-        //! return object as soon as the query is executed.
-        //! The return value is then processed in ProcessQueryCallback methods.
-        //! Any prepared statements added to this holder need to be prepared with the CONNECTION_ASYNC flag.
+      
         void DelayQueryHolder(SQLQueryHolder* holder,boost::function<void (SQLQueryHolder*)> callback)
         {
             SQLQueryHolderTask* task = new SQLQueryHolderTask(holder, callback);
             Enqueue(task);
-            return;     //! Fool compiler, has no use yet
+            return;     
         }
 
         /**
