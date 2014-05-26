@@ -2,9 +2,6 @@
 #ifndef _FIELD_H
 #define _FIELD_H
 #include "com.h"
-#ifdef _WIN32
-#include <WinSock2.h>
-#endif
 #include <mysql.h>
 class Field
 {

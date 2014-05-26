@@ -1,6 +1,7 @@
 //- Append a raw ad-hoc query to the transaction
 #include "Transaction.h"
 #include "MySQLConnection.h"
+#include "PreparedStatement.h"
 void Transaction::Append(const char* sql)
 {
     SQLElementData data;

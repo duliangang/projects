@@ -9,18 +9,19 @@
 static const int MINUTE=60;
 static const int HOUR=60*MINUTE;
 static const int DAY = 24*HOUR;
+#include <boost/thread/thread_time.hpp>
 
 
-Tokenizer::Tokenizer(const std::_tstring &src, const _tchar sep, uint32_t vectorReserve)
+WTokenizer::WTokenizer(const std::wstring &src, const wchar_t sep, uint32_t vectorReserve)
 {
-	m_str = new _tchar[src.length() + 1];
-	memcpy(m_str, src.c_str(), (src.length()+1)*sizeof(_tchar));
+	m_str = new wchar_t[src.length() + 1];
+	memcpy(m_str, src.c_str(), (src.length()+1)*sizeof(wchar_t));
 
 	if (vectorReserve)
 		m_storage.reserve(vectorReserve);
 
-	_tchar* posold = m_str;
-	_tchar* posnew = m_str;
+	wchar_t* posold = m_str;
+	wchar_t* posnew = m_str;
 
 	for (;;)
 	{
@@ -43,7 +44,43 @@ Tokenizer::Tokenizer(const std::_tstring &src, const _tchar sep, uint32_t vector
 	}
 }
 
+MTokenizer::MTokenizer(const std::string &src, const char sep, uint32_t vectorReserve)
+{
+	m_str = new char[src.length() + 1];
+	memcpy(m_str, src.c_str(), (src.length()+1)*sizeof(char));
 
+	if (vectorReserve)
+		m_storage.reserve(vectorReserve);
+
+	char* posold = m_str;
+	char* posnew = m_str;
+
+	for (;;)
+	{
+		if (*posnew == sep)
+		{
+			m_storage.push_back(posold);
+			posold = posnew + 1;
+
+			*posnew = '\0';
+		}
+		else if (*posnew == '\0')
+		{
+			if (posold != posnew)
+				m_storage.push_back(posold);
+
+			break;
+		}
+
+		++posnew;
+	}
+}
+
+#ifndef _UNICODE
+#define Tokenizer MTokenizer
+#else
+#define Tokenizer WTokenizer
+#endif
 std::_tstring secsToTimeString(uint64_t timeInSecs, bool shortText, bool hoursOnly)
 {
     uint64_t secs    = timeInSecs % MINUTE;

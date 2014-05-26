@@ -7,16 +7,17 @@
 #include <vector>
 #include "QueryResult.h"
 #include "PreparedStatement.h"
-class SQLQueryHolder
+class QueryHolder
 {
     friend class SQLQueryHolderTask;
     private:
         typedef std::pair<SQLElementData, SQLResultSetUnion> SQLResultPair;
         std::vector<SQLResultPair> m_queries;
     public:
-        SQLQueryHolder() {}
-        ~SQLQueryHolder();
+        QueryHolder() {}
+        ~QueryHolder();
         bool SetQuery(size_t index, const char *sql);
+		size_t GetSize()const;
         bool SetPQuery(size_t index, const char *format, ...) ;
         bool SetPreparedQuery(size_t index, PreparedStatement* stmt);
         void SetSize(size_t size);
@@ -27,18 +28,19 @@ class SQLQueryHolder
 };
 
 
-typedef  boost::function<void (boost::shared_ptr<SQLQueryHolder>) > QueryHolderCallBackFunc; 
+typedef  boost::shared_ptr<QueryHolder> SQLQueryHolder; 
+typedef  boost::function<void (SQLQueryHolder) > QueryHolderCallBackFunc; 
+
 class SQLQueryHolderTask : public SQLOperation
 {
     private:
-        SQLQueryHolder * m_holder;
+        SQLQueryHolder  m_holder;
         QueryHolderCallBackFunc m_callBack;
 
     public:
-        SQLQueryHolderTask(SQLQueryHolder *holder,QueryHolderCallBackFunc callBack)
+        SQLQueryHolderTask(SQLQueryHolder holder,QueryHolderCallBackFunc callBack)
             : m_holder(holder), m_callBack(callBack){};
         bool Execute();
 
 };
-
 #endif

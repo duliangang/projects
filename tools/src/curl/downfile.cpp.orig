@@ -1,6 +1,8 @@
 #include "down.h"
-#include <direct.h>
+<<<<<<< HEAD
+=======
 #include <map>
+>>>>>>> c428d3add07f8cc5f8514f4045268100b1f9b2b8
 #include <stdint.h>
 #include <stdlib.h>
 #include <io.h>
@@ -40,33 +42,28 @@ private:
 	local_file_info m_localinfo;
 	int getDownloadFileLenth()
 	{
-		double downloadFileLenth = -1.0f;
-		int count=0;
-		while(count!=5)
+		double downloadFileLenth = 0;
+		CURL *handle = curl_easy_init();
+<<<<<<< HEAD
+		curl_easy_setopt(handle, CURLOPT_URL, m_url.c_str());
+=======
+		curl_easy_setopt(handle,CURLOPT_URL,m_url.c_str());
+>>>>>>> c428d3add07f8cc5f8514f4045268100b1f9b2b8
+		curl_easy_setopt(handle, CURLOPT_HEADER, 1);    //只需要header头
+		curl_easy_setopt(handle, CURLOPT_NOBODY, 1);    //不需要body
+		m_retCode =curl_easy_perform(handle);
+
+		if (m_retCode == CURLE_OK) 
 		{
-			CURL *handle = curl_easy_init();
-
-			curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
-			curl_easy_setopt(handle,CURLOPT_URL,m_url.c_str());
-			curl_easy_setopt(handle, CURLOPT_HEADER, 1);    //只需要header头
-			curl_easy_setopt(handle, CURLOPT_NOBODY, 1);    //不需要body
-			m_retCode =curl_easy_perform(handle);
-
-			if (m_retCode == CURLE_OK) 
-			{
-				curl_easy_getinfo(handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &downloadFileLenth);
-			} 
-			else 
-			{
-				sLog->outError(LOG_FILTER_CUR_DOWN,"获取文件信息失败,url= %s,错误码%d",m_url.c_str(),m_retCode);
-				downloadFileLenth = -1;
-				count++;
-				continue;
-			}
-			curl_easy_cleanup(handle);
-			return downloadFileLenth;
+			curl_easy_getinfo(handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &downloadFileLenth);
+		} 
+		else 
+		{
+			sLog->outError(LOG_FILTER_CUR_DOWN,"获取文件信息失败,url= %s,错误码%d",m_url.c_str(),m_retCode);
+			downloadFileLenth = -1;
 		}
-		
+		curl_easy_cleanup(handle);
+		return downloadFileLenth;
 	}
 	//return cache file size
 	int getlocalCacheFileInfo()
@@ -195,9 +192,12 @@ private:
 		curl_download* down=(curl_download*)downclass;
 		return down->_process_data(buffer,size,nmemb);
 	}
+<<<<<<< HEAD
+=======
 	
 
 	
+>>>>>>> c428d3add07f8cc5f8514f4045268100b1f9b2b8
 	 long  GetLocalFileLength()
 	{
 		FILE* fp=fopen(m_filename.c_str(),"rb");
@@ -208,7 +208,10 @@ private:
 		return length;
 	}
 public:
+<<<<<<< HEAD
+=======
 	
+>>>>>>> c428d3add07f8cc5f8514f4045268100b1f9b2b8
 	curl_download(const std::string& url,const std::string& filename):m_complete_par(NULL),m_error_par(NULL),m_resumeBrokenDown(true)\
 		,m_complete_fun(NULL),m_error_fun(NULL),m_bstop(false),m_progress_fun(0),m_progress_par(NULL),m_localFile(NULL),m_localcfgFile(NULL)\
 		,m_notdeferror(1)
@@ -259,7 +262,6 @@ public:
 		}
 		CURL *handle = curl_easy_init();
 		assert(handle);
-		curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
 		long local_size=getlocalCacheFileInfo();
 
 		sLog->outTrace(LOG_FILTER_CUR_DOWN,"文件%s本地缓存信息:大小%d,总大小%d",m_filename.c_str(),local_size,m_localinfo.local_total_size);
@@ -275,15 +277,6 @@ public:
 		curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 1);
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, process_data);
 		curl_easy_setopt(handle, CURLOPT_WRITEDATA, this);
-	
-	
-		std::string exePath=m_filename;
-		int pos=exePath.find_last_of('\\');
-		if (pos!=std::string::npos)
-		{
-			exePath.assign(exePath.begin(),exePath.begin()+pos);
-			_mkdir(exePath.c_str());
-		}
 		m_retCode=curl_easy_perform(handle);
 		if(m_localFile)
 		{
@@ -330,6 +323,9 @@ public:
 		return CURLE_OK;
 	}
 };
+<<<<<<< HEAD
+
+=======
 std::string stringReplace(const std::string& input,
 	const std::string& find,
 	const std::string& replaceWith)
@@ -350,8 +346,6 @@ std::string stringReplace(const std::string& input,
 void curl_easy_escape_skip_chars(std::string& escape_str,const char* _skip_chars)
 {
 	CURL *handle = curl_easy_init();
-
-	curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
 	std::string skip_chars=_skip_chars;
 	std::map<std::string,std::string> skip_list;
 	for (int i=0;i!=skip_chars.size();i++)
@@ -370,14 +364,19 @@ void curl_easy_escape_skip_chars(std::string& escape_str,const char* _skip_chars
 	curl_easy_cleanup(handle);
 	return ;
 }
+>>>>>>> c428d3add07f8cc5f8514f4045268100b1f9b2b8
 
 
 curl_down_handle * curl_download_handle_create(const char* url,const  char*  filename)
 {
+<<<<<<< HEAD
+	curl_download* handle=new curl_download(url,filename);
+=======
 	curl_download_init();
 	std::string m_url=url;
 	curl_easy_escape_skip_chars(m_url,"/:");
 	curl_download* handle=new curl_download(m_url,filename);
+>>>>>>> c428d3add07f8cc5f8514f4045268100b1f9b2b8
 	return (curl_down_handle*)handle;
 }
 int curl_download_stop(curl_down_handle* down_handle)
@@ -443,21 +442,8 @@ int curl_download_init()
 	init =true;
 	mutex.release();
 	Config config;
-	std::_tstring Patch=_T("curl.conf");//0808:配置文件位置
-	TCHAR exeFullPath[MAX_PATH]; // MAX_PATH
-	std::_tstring exePath ;
-	int length=GetModuleFileName(NULL,exeFullPath,MAX_PATH);
-	exePath=exeFullPath;
-	int pos=exePath.find_last_of('\\');
-	if (pos!=std::wstring::npos)
-	{
-		exePath.assign(exePath.begin(),exePath.begin()+pos);
-		Patch=exePath+_T("\\")+Patch;
-
-		if(config.ReadFile(Patch))
-			sLog->LoadFromConfig(&config);
-	}
-
+	if(config.ReadFile(_T("curl.conf")))
+		sLog->LoadFromConfig(&config);
 	CURLcode ret=curl_global_init(CURL_GLOBAL_WIN32);
 	if(ret!=CURLE_OK)
 	{

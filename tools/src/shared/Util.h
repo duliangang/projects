@@ -3,10 +3,10 @@
 #include <vector>
 #include <algorithm>
 #include "../string/utf8cpp/utf8.h"
-class Tokenizer
+class MTokenizer
 {
 public:
-	typedef std::vector<_tchar const *> StorageType;
+	typedef std::vector<char const *> StorageType;
 
 	typedef StorageType::size_type size_type;
 
@@ -15,8 +15,8 @@ public:
 	typedef StorageType::const_reference const_reference;
 
 public:
-	Tokenizer(const std::_tstring &src, _tchar const sep, uint32_t vectorReserve = 0);
-	~Tokenizer() { delete[] m_str; }
+	MTokenizer(const std::string &src, char const sep, uint32_t vectorReserve = 0);
+	~MTokenizer() { delete[] m_str; }
 
 	const_iterator begin() const { return m_storage.begin(); }
 	const_iterator end() const { return m_storage.end(); }
@@ -27,7 +27,35 @@ public:
 	const_reference operator [] (size_type i) const { return m_storage[i]; }
 
 private:
-	_tchar* m_str;
+	char* m_str;
+	StorageType m_storage;
+};
+
+class WTokenizer
+{
+public:
+	typedef std::vector<wchar_t const *> StorageType;
+
+	typedef StorageType::size_type size_type;
+
+	typedef StorageType::const_iterator const_iterator;
+	typedef StorageType::reference reference;
+	typedef StorageType::const_reference const_reference;
+
+public:
+	WTokenizer(const std::wstring &src, wchar_t const sep, uint32_t vectorReserve = 0);
+	~WTokenizer() { delete[] m_str; }
+
+	const_iterator begin() const { return m_storage.begin(); }
+	const_iterator end() const { return m_storage.end(); }
+
+	size_type size() const { return m_storage.size(); }
+
+	reference operator [] (size_type i) { return m_storage[i]; }
+	const_reference operator [] (size_type i) const { return m_storage[i]; }
+
+private:
+	wchar_t* m_str;
 	StorageType m_storage;
 };
 
@@ -69,7 +97,6 @@ inline bool isBasicLatinCharacter(wchar_t wchar)
 		return true;
 	return false;
 }
-
 inline bool isExtendedLatinCharacter(wchar_t wchar)
 {
 	if (isBasicLatinCharacter(wchar))

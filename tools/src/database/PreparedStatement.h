@@ -6,13 +6,11 @@
 #ifdef __APPLE__
 #undef TYPE_BOOL
 #endif
+#include "../shared/Define.h"
 #include "SQLOperation.h"
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <vector>
-#ifdef WIN32
-#include <WinSock2.h>
-#endif
 #include <mysql.h>
 #include "QueryResult.h"
 #include "com.h"

@@ -73,7 +73,7 @@ void Log::CreateAppenderFromConfig(const _tchar* name)
 	Tokenizer::const_iterator iter = tokens.begin();
 
 	if (tokens.size() < 2)
-	{
+	{	
 		fprintf(stderr, "Log::CreateAppenderFromConfig: Wrong configuration for appender %s. Config line: %s\n", name, options.c_str());
 		return;
 	}
@@ -154,7 +154,7 @@ bool Log::ShouldLog(uint8_t type, LogLevel level) const
 
 	return false;
 }
-void Log::setFilterString(const std::map<uint8_t,std::_tstring>& FilterStringList)
+void Log::setFilterString(const std::map<uint8_t,std::string>& FilterStringList)
 {
 	Appender::MapLogFilterTypeString=FilterStringList;
 	return ;
@@ -209,7 +209,12 @@ void Log::CreateLoggerFromConfig(const _tchar* name)
 	}
 
 	logger.Create(name, uint8_t(type), level);
+#ifdef _UNICODE
+	std::string tempstr;
+	Appender::MapLogFilterTypeString[type]=WStrToConsole(name,tempstr);
+#else
 	Appender::MapLogFilterTypeString[type]=name;
+#endif
 	//fprintf(stdout, "Log::CreateLoggerFromConfig: Created Logger %s, Type %u, mask %u\n", name, LogFilterType(type), level); // DEBUG - RemoveMe
 
 	++iter;
@@ -268,19 +273,19 @@ void Log::va_log(uint8_t filter, LogLevel level, wchar_t const* str, va_list arg
 {
 	wchar_t text[MAX_QUERY_LEN];
 	_vsnwprintf(text, MAX_QUERY_LEN, str, argptr);
-	write(new LogMessage(level, filter, text));
+	std::string cstr;
+	WStrToConsole(text,cstr);
+	write(new LogMessage(level, filter, cstr));
 }
 void Log::va_log(uint8_t filter, LogLevel level, char const* str, va_list argptr)
 {
 	char text[MAX_QUERY_LEN];
 	vsnprintf(text, MAX_QUERY_LEN, str, argptr);
-	std::wstring wstr;
-	ConsoleToWStr(text,wstr);
-	write(new LogMessage(level, filter, wstr));
+	write(new LogMessage(level, filter, str));
 }
 void Log::write(LogMessage* msg)
 {
-	msg->text.append(_T("\n"));
+	msg->text.append("\n");
 	Logger* logger = GetLoggerByType(msg->type);
 	if (worker)
 	{

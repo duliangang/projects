@@ -145,13 +145,9 @@ void AppenderConsole::_write(LogMessage& message)
     bool stdout_stream = message.level == LOG_LEVEL_ERROR || message.level == LOG_LEVEL_FATAL;
 	std::string text;
 	std::string prefix;
-#ifdef _UNICODE 
-	WStrToConsole(message.text,text);
-	WStrToConsole(message.prefix,prefix);
-#else
+
 	text=message.text;
 	prefix=message.prefix;
-#endif 
     if (_colored)
     {
         uint8_t index;

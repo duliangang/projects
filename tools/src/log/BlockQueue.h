@@ -50,7 +50,6 @@ public:
 			if(m_isDestory)return;
 			m_isDestory=true;
 			m_cond.notify_all();
-			
 		}
 		
 	}
@@ -69,7 +68,7 @@ public:
 		{
 			m_cond.wait(m_mutex);
 		}
-		if(m_isDestory)return false;
+		if(m_isDestory){return false;}
 		res=m_queue.front();
 		m_queue.pop_front();
 		return true;

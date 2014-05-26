@@ -1,5 +1,6 @@
 #include "LogWorker.h"
 #include "Logger.h"
+#include <boost/thread.hpp>
 LogOperation::~LogOperation()
 {
 	delete msg;
@@ -14,7 +15,8 @@ int LogOperation::call()
 
 LogWorker::LogWorker()
 {
-	
+	boost::thread thread(boost::bind(&LogWorker::svc,this));
+	thread.detach();
 }
 
 LogWorker::~LogWorker()

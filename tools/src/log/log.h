@@ -3,13 +3,14 @@
 #include "../shared/Define.h"
 #include "../thread/singleton.h"
 #include "Logger.h"
+#include <boost/thread.hpp>
 #include <string>
 
 class Config;
 class LogWorker;
 class Log
 {
-	friend class Singleton<Log,Thread_Mutex>;
+	friend class Singleton<Log>;
 	typedef std::map<int32_t, Logger> LoggerMap;
 public:
 	void LoadFromConfig(const Config* conf);
@@ -31,7 +32,7 @@ public:
 	void outError(uint8_t f, wchar_t const* str, ...);
 	void outFatal(uint8_t f, wchar_t const* str, ...);
 	static std::_tstring GetTimestampStr();
-	void setFilterString(const std::map<uint8_t,std::_tstring>& FilterStringList);
+	void setFilterString(const std::map<uint8_t,std::string>& FilterStringList);
 
 private:
 	void va_log(uint8_t f, LogLevel level, wchar_t const* str, va_list argptr);
@@ -61,6 +62,6 @@ private:
 	std::_tstring m_logsDir;
 	std::_tstring m_logsTimestamp;
 };
-#define sLog Singleton<Log,Thread_Mutex>::GetInstance()
+#define sLog Singleton<Log>::GetInstance()
 #endif
 

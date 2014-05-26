@@ -2,7 +2,7 @@
 #include "QueryResult.h"
 #include "PreparedStatement.h"
 #include "MySQLConnection.h"
-bool SQLQueryHolder::SetQuery(size_t index, const char *sql)
+bool QueryHolder::SetQuery(size_t index, const char *sql)
 {
     if (m_queries.size() <= index)
     {
@@ -21,8 +21,11 @@ bool SQLQueryHolder::SetQuery(size_t index, const char *sql)
     m_queries[index] = SQLResultPair(element, result);
     return true;
 }
-
-bool SQLQueryHolder::SetPQuery(size_t index, const char *format, ...)
+size_t QueryHolder::GetSize()const
+{
+	return m_queries.size();
+}
+bool QueryHolder::SetPQuery(size_t index, const char *format, ...)
 {
     if (!format)
     {
@@ -45,7 +48,7 @@ bool SQLQueryHolder::SetPQuery(size_t index, const char *format, ...)
     return SetQuery(index, szQuery);
 }
 
-bool SQLQueryHolder::SetPreparedQuery(size_t index, PreparedStatement* stmt)
+bool QueryHolder::SetPreparedQuery(size_t index, PreparedStatement* stmt)
 {
     if (m_queries.size() <= index)
     {
@@ -65,7 +68,7 @@ bool SQLQueryHolder::SetPreparedQuery(size_t index, PreparedStatement* stmt)
     return true;
 }
 
-QueryResult SQLQueryHolder::GetResult(size_t index)
+QueryResult QueryHolder::GetResult(size_t index)
 {
     // Don't call to this function if the index is of an ad-hoc statement
     if (index < m_queries.size())
@@ -81,7 +84,7 @@ QueryResult SQLQueryHolder::GetResult(size_t index)
         return QueryResult(NULL);
 }
 
-PreparedQueryResult SQLQueryHolder::GetPreparedResult(size_t index)
+PreparedQueryResult QueryHolder::GetPreparedResult(size_t index)
 {
     // Don't call to this function if the index is of a prepared statement
     if (index < m_queries.size())
@@ -96,7 +99,7 @@ PreparedQueryResult SQLQueryHolder::GetPreparedResult(size_t index)
         return PreparedQueryResult(NULL);
 }
 
-void SQLQueryHolder::SetResult(size_t index, ResultSet* result)
+void QueryHolder::SetResult(size_t index, ResultSet* result)
 {
     if (result && !result->GetRowCount())
     {
@@ -109,7 +112,7 @@ void SQLQueryHolder::SetResult(size_t index, ResultSet* result)
         m_queries[index].second.qresult = result;
 }
 
-void SQLQueryHolder::SetPreparedResult(size_t index, PreparedResultSet* result)
+void QueryHolder::SetPreparedResult(size_t index, PreparedResultSet* result)
 {
     if (result && !result->GetRowCount())
     {
@@ -122,7 +125,7 @@ void SQLQueryHolder::SetPreparedResult(size_t index, PreparedResultSet* result)
         m_queries[index].second.presult = result;
 }
 
-SQLQueryHolder::~SQLQueryHolder()
+QueryHolder::~QueryHolder()
 {
     for (size_t i = 0; i < m_queries.size(); i++)
     {
@@ -143,7 +146,7 @@ SQLQueryHolder::~SQLQueryHolder()
     }
 }
 
-void SQLQueryHolder::SetSize(size_t size)
+void QueryHolder::SetSize(size_t size)
 {
     /// to optimize push_back, reserve the number of queries about to be executed
     m_queries.resize(size);
@@ -155,7 +158,7 @@ bool SQLQueryHolderTask::Execute()
         return false;
 
     /// we can do this, we are friends
-    std::vector<SQLQueryHolder::SQLResultPair> &queries = m_holder->m_queries;
+    std::vector<QueryHolder::SQLResultPair> &queries = m_holder->m_queries;
 
     for (size_t i = 0; i < queries.size(); i++)
     {
@@ -181,6 +184,6 @@ bool SQLQueryHolderTask::Execute()
             }
         }
     }
-	m_callBack(boost::shared_ptr<SQLQueryHolder>(m_holder));
+	m_callBack(m_holder);
     return true;
 }
